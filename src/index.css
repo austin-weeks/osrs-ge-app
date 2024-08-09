@@ -35,7 +35,9 @@ html {
 .text-rs-shadow {
   text-shadow: 0.15rem 0.15rem black;
 }
-
+.text-rs-shadow-large {
+  text-shadow: 0.2rem 0.2rem black;
+}
 
 .rs-border {
   border-width: 2px;

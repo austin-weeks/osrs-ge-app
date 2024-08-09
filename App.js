@@ -2382,9 +2382,9 @@ var require_react_dom_development = __commonJS({
         if (typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ !== "undefined" && typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart === "function") {
           __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart(new Error());
         }
-        var React6 = require_react();
+        var React9 = require_react();
         var Scheduler = require_scheduler();
-        var ReactSharedInternals = React6.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+        var ReactSharedInternals = React9.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
         var suppressWarning = false;
         function setSuppressWarning(newSuppressWarning) {
           {
@@ -3989,7 +3989,7 @@ var require_react_dom_development = __commonJS({
           {
             if (props.value == null) {
               if (typeof props.children === "object" && props.children !== null) {
-                React6.Children.forEach(props.children, function(child) {
+                React9.Children.forEach(props.children, function(child) {
                   if (child == null) {
                     return;
                   }
@@ -23523,11 +23523,11 @@ var require_client = __commonJS({
 });
 
 // src/entry.jsx
-var import_react5 = __toESM(require_react());
+var import_react8 = __toESM(require_react());
 var import_client = __toESM(require_client());
 
 // src/StockApp.jsx
-var import_react4 = __toESM(require_react());
+var import_react7 = __toESM(require_react());
 
 // src/Components/RollingText.jsx
 var import_react = __toESM(require_react());
@@ -23553,18 +23553,58 @@ function Categories({ activeCategory, changeCategory }) {
   return /* @__PURE__ */ import_react3.default.createElement("div", { className: "flex flex-row w-full gap-1 items-center justify-center border-stone-700 border-t-2 border-b-2 py-1" }, /* @__PURE__ */ import_react3.default.createElement(Button, null, "Search for Item"), /* @__PURE__ */ import_react3.default.createElement(Button, null, "Price Rises"), /* @__PURE__ */ import_react3.default.createElement(Button, null, "Price Falls"), /* @__PURE__ */ import_react3.default.createElement(Button, null, "Most Valuable Trades"), /* @__PURE__ */ import_react3.default.createElement(Button, null, "Most Traded"));
 }
 
+// src/Components/ItemInfo.jsx
+var import_react4 = __toESM(require_react());
+function ItemInfo({ item }) {
+  return /* @__PURE__ */ import_react4.default.createElement("div", { className: "flex flex-col items-center justify-center" }, /* @__PURE__ */ import_react4.default.createElement("div", null, "item info!"));
+}
+
+// src/Components/ItemList.jsx
+var import_react5 = __toESM(require_react());
+function ItemList({ items }) {
+  console.log(items);
+  return /* @__PURE__ */ import_react5.default.createElement("div", { className: "flex flex-col" }, items.map((item) => /* @__PURE__ */ import_react5.default.createElement(Item, { item })));
+}
+function Item(item) {
+  return /* @__PURE__ */ import_react5.default.createElement("div", null, "This is an item!");
+}
+
+// src/Components/LoadingSpinner.jsx
+var import_react6 = __toESM(require_react());
+function LoadingSpinner() {
+  return /* @__PURE__ */ import_react6.default.createElement("div", { className: "h-16 flex flex-col justify-end" }, /* @__PURE__ */ import_react6.default.createElement("div", { className: "flex flex-row gap-1 animate-runes-fade" }, /* @__PURE__ */ import_react6.default.createElement(
+    "img",
+    {
+      src: "https://oldschool.runescape.wiki/images/Air_rune.png?248b4",
+      className: "w-8 h-8 animate-runes-bounce"
+    }
+  ), /* @__PURE__ */ import_react6.default.createElement(
+    "img",
+    {
+      src: "https://oldschool.runescape.wiki/images/Water_rune.png?75a26",
+      className: "w-8 h-8 animate-runes-bounce [animation-delay:0.15s]"
+    }
+  ), /* @__PURE__ */ import_react6.default.createElement(
+    "img",
+    {
+      src: "https://oldschool.runescape.wiki/images/Fire_rune.png?3859a",
+      className: "w-8 h-8  animate-runes-bounce [animation-delay:0.3s]"
+    }
+  )));
+}
+
 // src/StockApp.jsx
 function StockApp() {
-  const [category, setCategory] = (0, import_react4.useState)(null);
+  const [category, setCategory] = (0, import_react7.useState)(null);
   function updateCategory(category2) {
     setCategory(category2);
   }
-  return /* @__PURE__ */ import_react4.default.createElement("div", { className: "text-3xl max-h-screen w-screen flex flex-col items-center" }, /* @__PURE__ */ import_react4.default.createElement(RollingText, { className: "text-4xl", text: "OLD SCHOOL RUNESCAPE PRICES" }), /* @__PURE__ */ import_react4.default.createElement(Categories, { activeCategory: category, changeCategory: updateCategory }));
+  return /* @__PURE__ */ import_react7.default.createElement("div", { className: "text-3xl max-h-screen w-screen flex flex-col items-center" }, /* @__PURE__ */ import_react7.default.createElement(RollingText, { className: "text-4xl pt-1", text: "OLD SCHOOL RUNESCAPE PRICES" }), /* @__PURE__ */ import_react7.default.createElement(Categories, { activeCategory: category, changeCategory: updateCategory }), /* @__PURE__ */ import_react7.default.createElement("div", { className: "flex flew-row w-full h-full" }, /* @__PURE__ */ import_react7.default.createElement(ItemList, { items: ["", "", "", "", "", "", "", "", "", "", "", ""] }), /* @__PURE__ */ import_react7.default.createElement(ItemInfo, { item: null }), /* @__PURE__ */ import_react7.default.createElement(LoadingSpinner, null)));
 }
 
 // src/entry.jsx
 import_client.default.createRoot(document.getElementById("root")).render(
-  /* @__PURE__ */ import_react5.default.createElement(import_react5.default.StrictMode, null, /* @__PURE__ */ import_react5.default.createElement(StockApp, null))
+  /* @__PURE__ */ import_react8.default.createElement(import_react8.default.StrictMode, null, /* @__PURE__ */ import_react8.default.createElement(StockApp, null))
 );
 /*! Bundled license information:
 
