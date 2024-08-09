@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  user-drag: none;
+}
+
+:root {
+  --rs-primary: rgb(102, 91, 71);
+  --rs-medium: #544b39;
+  --rs-border-light: #9c8862;
+  --rs-border-dark: #2d281e;
+}
+
+@layer base {
+  @font-face {
+    font-family: 'Runescape';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url(/runescape.ttf);
+  }
+}
+
+html {
+  @apply text-rs-shadow;
+  background-color: var(--rs-primary);
+  color: #ffff00;
+}
+.text-rs-shadow {
+  text-shadow: 0.15rem 0.15rem black;
+}
+
+
+.rs-border {
+  border-width: 2px;
+  border-top-color: var(--rs-border-light);
+  border-left-color: var(--rs-border-light);
+  border-bottom-color: var(--rs-border-dark);
+  border-right-color: var(--rs-border-dark);
+}
+
+.animate-scroll-text-left {
+  animation: scrolling-text-left 60s linear infinite;
+}
+.animate-scroll-text-right {
+  animation: scrolling-text-right 60s linear infinite;
+}
+.animate-scroll-text-left:hover, .animate-scroll-text-right:hover {
+  animation-play-state: paused;
+}
+@keyframes scrolling-text-left {
+  from {
+    transform: translateX(0%);
+  }
+  to {
+    transform: translateX(-400%);
+  }
+}
+@keyframes scrolling-text-right {
+  from {
+    transform: translateX(400%);
+  }
+  to {
+    transform: translateX(0%);
+  }
+}
