@@ -12,9 +12,14 @@
 
 :root {
   --rs-primary: rgb(102, 91, 71);
+  --rs-light: #574e3d;
   --rs-medium: #544b39;
+  --rs-dark: #483f2c;
+  --rs-border-light-active: #facc15;
+  --rs-border-dark-active: #b59411;
   --rs-border-light: #9c8862;
   --rs-border-dark: #2d281e;
+  --rs-text-yellow: #ffff00;
 }
 
 @layer base {
@@ -27,10 +32,18 @@
   }
 }
 
+.no-blurry {
+  image-rendering: crisp-edges;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: -o-crisp-edges;
+  image-rendering: -webkit-optimize-contrast;
+  -ms-interpolation-mode: nearest-neighbor;
+}
+
 html {
   @apply text-rs-shadow;
   background-color: var(--rs-primary);
-  color: #ffff00;
+  color: var(--rs-text-yellow);
 }
 .text-rs-shadow {
   text-shadow: 0.15rem 0.15rem black;
@@ -53,22 +66,34 @@ html {
 .animate-scroll-text-right {
   animation: scrolling-text-right 60s linear infinite;
 }
-.animate-scroll-text-left:hover, .animate-scroll-text-right:hover {
+.animate-scroll-text-vertical {
+  writing-mode: vertical-lr;
+  animation: scrolling-text-vertical 60s linear infinite;
+}
+.pause-hover:hover {
   animation-play-state: paused;
 }
 @keyframes scrolling-text-left {
   from {
-    transform: translateX(0%);
+    transform: translateX(-50%);
   }
   to {
-    transform: translateX(-400%);
+    transform: translateX(-450%);
   }
 }
 @keyframes scrolling-text-right {
   from {
-    transform: translateX(400%);
+    transform: translateX(-450%);
   }
   to {
-    transform: translateX(0%);
+    transform: translateX(50%);
+  }
+}
+@keyframes scrolling-text-vertical {
+  from {
+    transform: translateY(-50%);
+  }
+  to {
+    transform: translateY(-450%);
   }
 }

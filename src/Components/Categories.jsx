@@ -1,23 +1,23 @@
-import React from "react";
-import Button from "./ButtonInventory";
+import React, { useState } from "react";
+import Button from "./Button";
 
-export default function Categories({ activeCategory, changeCategory }) {
+export default function Categories({ category, changeCategory }) {
 
   return (
-    <div className="flex flex-row w-full gap-1 items-center justify-center border-stone-700 border-t-2 border-b-2 py-1">
+    <div className="flex flex-row w-full gap-1 items-center justify-center py-1">
       <Button>
         Search for Item
       </Button>
-      <Button>
+      <Button active={category === 'rises'} onClick={() => changeCategory('rises')}>
         Price Rises
       </Button>
-      <Button>
+      <Button active={category === 'falls'} onClick={() => changeCategory('falls')}>
         Price Falls
       </Button>
-      <Button>
+      <Button active={category === 'most-valuable'} onClick={() => changeCategory('most-valuable')}>
         Most Valuable Trades
       </Button>
-      <Button>
+      <Button active={category === 'most-traded'} onClick={() => changeCategory('most-traded')}>
         Most Traded
       </Button>
     </div>

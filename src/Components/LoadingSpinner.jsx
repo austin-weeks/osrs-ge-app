@@ -3,7 +3,7 @@ import React from "react";
 export default function LoadingSpinner() {
   return (
     <div className="h-16 flex flex-col justify-end">
-      <div className="flex flex-row gap-1 animate-runes-fade">
+      <div className="flex flex-row gap-1 animate-runes-fade justify-center items-center">
         {/* air rune */}
         <img src="https://oldschool.runescape.wiki/images/Air_rune.png?248b4"
           className="w-8 h-8 animate-runes-bounce"

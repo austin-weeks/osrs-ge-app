@@ -1083,7 +1083,7 @@ var require_react_development = __commonJS({
           }
           return dispatcher.useContext(Context);
         }
-        function useState2(initialState) {
+        function useState4(initialState) {
           var dispatcher = resolveDispatcher();
           return dispatcher.useState(initialState);
         }
@@ -1095,7 +1095,7 @@ var require_react_development = __commonJS({
           var dispatcher = resolveDispatcher();
           return dispatcher.useRef(initialValue);
         }
-        function useEffect(create, deps) {
+        function useEffect3(create, deps) {
           var dispatcher = resolveDispatcher();
           return dispatcher.useEffect(create, deps);
         }
@@ -1704,7 +1704,7 @@ var require_react_development = __commonJS({
         }
         var actScopeDepth = 0;
         var didWarnNoAwaitAct = false;
-        function act(callback) {
+        function act2(callback) {
           {
             var prevActScopeDepth = actScopeDepth;
             actScopeDepth++;
@@ -1862,7 +1862,7 @@ var require_react_development = __commonJS({
         exports.StrictMode = REACT_STRICT_MODE_TYPE;
         exports.Suspense = REACT_SUSPENSE_TYPE;
         exports.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED = ReactSharedInternals;
-        exports.act = act;
+        exports.act = act2;
         exports.cloneElement = cloneElement$1;
         exports.createContext = createContext;
         exports.createElement = createElement$1;
@@ -1873,12 +1873,12 @@ var require_react_development = __commonJS({
         exports.lazy = lazy;
         exports.memo = memo;
         exports.startTransition = startTransition;
-        exports.unstable_act = act;
+        exports.unstable_act = act2;
         exports.useCallback = useCallback;
         exports.useContext = useContext;
         exports.useDebugValue = useDebugValue;
         exports.useDeferredValue = useDeferredValue;
-        exports.useEffect = useEffect;
+        exports.useEffect = useEffect3;
         exports.useId = useId;
         exports.useImperativeHandle = useImperativeHandle;
         exports.useInsertionEffect = useInsertionEffect;
@@ -1886,7 +1886,7 @@ var require_react_development = __commonJS({
         exports.useMemo = useMemo;
         exports.useReducer = useReducer;
         exports.useRef = useRef;
-        exports.useState = useState2;
+        exports.useState = useState4;
         exports.useSyncExternalStore = useSyncExternalStore;
         exports.useTransition = useTransition;
         exports.version = ReactVersion;
@@ -23533,58 +23533,53 @@ var import_react7 = __toESM(require_react());
 var import_react = __toESM(require_react());
 function RollingText({ text, toRight = false, ...props }) {
   let repeatedText = text;
-  for (let i = 0; i < 20; i++) {
+  for (let i = 0; i < 100; i++) {
     repeatedText += " " + text;
   }
-  return /* @__PURE__ */ import_react.default.createElement("div", { className: "w-full overflow-x-hidden" }, /* @__PURE__ */ import_react.default.createElement("div", { className: `w-full whitespace-nowrap ${toRight ? "animate-scroll-text-right" : "animate-scroll-text-left"} ${props.className}` }, repeatedText));
+  return /* @__PURE__ */ import_react.default.createElement("div", { className: `w-full overflow-x-hidden flex-shrink-0 pt-1 hover:cursor-crosshair ${props.className}` }, /* @__PURE__ */ import_react.default.createElement("div", { className: `w-full whitespace-nowrap pause-hover ${toRight ? "animate-scroll-text-right" : "animate-scroll-text-left"}` }, repeatedText));
+}
+function RollingTextVertical({ text, flipped = false, ...props }) {
+  let repeatedText = text;
+  for (let i = 0; i < 50; i++) {
+    repeatedText += " " + text;
+  }
+  return /* @__PURE__ */ import_react.default.createElement("div", { className: `h-full overflow-y-hidden flex-shrink-0 hover:cursor-crosshair border-border border-l-2 ${flipped ? "pl-1 rotate-180" : "pr-1"}` }, /* @__PURE__ */ import_react.default.createElement("div", { className: `h-full whitespace-nowrap pause-hover animate-scroll-text-vertical ${props.className}` }, repeatedText));
 }
 
 // src/Components/Categories.jsx
 var import_react3 = __toESM(require_react());
 
-// src/Components/ButtonInventory.jsx
+// src/Components/Button.jsx
 var import_react2 = __toESM(require_react());
-function Button({ ...props }) {
-  return /* @__PURE__ */ import_react2.default.createElement("button", { className: "text-rs-shadow bg-rs-medium px-3 pt-1.5 pb-1\n      border-[2px] rounded-sm border-t-rs-border-light border-l-rs-border-light border-b-stone-800 border-r-stone-800" }, /* @__PURE__ */ import_react2.default.createElement("div", { ...props }));
+function Button({ active, ...props }) {
+  return /* @__PURE__ */ import_react2.default.createElement("button", { className: `text-rs-shadow px-3 pt-1.5 pb-1 border-[2px] 
+      ${active ? "border-rs-text bg-rs-dark" : "border-t-rs-border-light border-l-rs-border-light border-b-stone-800 border-r-stone-800 bg-rs-medium rounded-sm"}` }, /* @__PURE__ */ import_react2.default.createElement("div", { ...props }));
 }
 
 // src/Components/Categories.jsx
-function Categories({ activeCategory, changeCategory }) {
-  return /* @__PURE__ */ import_react3.default.createElement("div", { className: "flex flex-row w-full gap-1 items-center justify-center border-stone-700 border-t-2 border-b-2 py-1" }, /* @__PURE__ */ import_react3.default.createElement(Button, null, "Search for Item"), /* @__PURE__ */ import_react3.default.createElement(Button, null, "Price Rises"), /* @__PURE__ */ import_react3.default.createElement(Button, null, "Price Falls"), /* @__PURE__ */ import_react3.default.createElement(Button, null, "Most Valuable Trades"), /* @__PURE__ */ import_react3.default.createElement(Button, null, "Most Traded"));
+function Categories({ category, changeCategory }) {
+  return /* @__PURE__ */ import_react3.default.createElement("div", { className: "flex flex-row w-full gap-1 items-center justify-center py-1" }, /* @__PURE__ */ import_react3.default.createElement(Button, null, "Search for Item"), /* @__PURE__ */ import_react3.default.createElement(Button, { active: category === "rises", onClick: () => changeCategory("rises") }, "Price Rises"), /* @__PURE__ */ import_react3.default.createElement(Button, { active: category === "falls", onClick: () => changeCategory("falls") }, "Price Falls"), /* @__PURE__ */ import_react3.default.createElement(Button, { active: category === "most-valuable", onClick: () => changeCategory("most-valuable") }, "Most Valuable Trades"), /* @__PURE__ */ import_react3.default.createElement(Button, { active: category === "most-traded", onClick: () => changeCategory("most-traded") }, "Most Traded"));
 }
 
 // src/Components/ItemInfo.jsx
-var import_react4 = __toESM(require_react());
-function ItemInfo({ item }) {
-  return /* @__PURE__ */ import_react4.default.createElement("div", { className: "flex flex-col items-center justify-center" }, /* @__PURE__ */ import_react4.default.createElement("div", null, "item info!"));
-}
-
-// src/Components/ItemList.jsx
 var import_react5 = __toESM(require_react());
-function ItemList({ items }) {
-  console.log(items);
-  return /* @__PURE__ */ import_react5.default.createElement("div", { className: "flex flex-col" }, items.map((item) => /* @__PURE__ */ import_react5.default.createElement(Item, { item })));
-}
-function Item(item) {
-  return /* @__PURE__ */ import_react5.default.createElement("div", null, "This is an item!");
-}
 
 // src/Components/LoadingSpinner.jsx
-var import_react6 = __toESM(require_react());
+var import_react4 = __toESM(require_react());
 function LoadingSpinner() {
-  return /* @__PURE__ */ import_react6.default.createElement("div", { className: "h-16 flex flex-col justify-end" }, /* @__PURE__ */ import_react6.default.createElement("div", { className: "flex flex-row gap-1 animate-runes-fade" }, /* @__PURE__ */ import_react6.default.createElement(
+  return /* @__PURE__ */ import_react4.default.createElement("div", { className: "h-16 flex flex-col justify-end" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "flex flex-row gap-1 animate-runes-fade justify-center items-center" }, /* @__PURE__ */ import_react4.default.createElement(
     "img",
     {
       src: "https://oldschool.runescape.wiki/images/Air_rune.png?248b4",
       className: "w-8 h-8 animate-runes-bounce"
     }
-  ), /* @__PURE__ */ import_react6.default.createElement(
+  ), /* @__PURE__ */ import_react4.default.createElement(
     "img",
     {
       src: "https://oldschool.runescape.wiki/images/Water_rune.png?75a26",
       className: "w-8 h-8 animate-runes-bounce [animation-delay:0.15s]"
     }
-  ), /* @__PURE__ */ import_react6.default.createElement(
+  ), /* @__PURE__ */ import_react4.default.createElement(
     "img",
     {
       src: "https://oldschool.runescape.wiki/images/Fire_rune.png?3859a",
@@ -23593,18 +23588,234 @@ function LoadingSpinner() {
   )));
 }
 
+// src/apiCalls.jsx
+async function loadInDepth(item, setItem) {
+  await new Promise((resolve) => setTimeout(resolve, 500));
+  setItem(item);
+}
+var rises = null;
+async function loadRises(updateFunction) {
+  if (rises) {
+    updateFunction(rises);
+    return;
+  }
+  const mapped = await getBase();
+  const priceRises = mapped.sort((a, b) => {
+    return b.priceChange - a.priceChange;
+  });
+  rises = priceRises;
+  updateFunction(priceRises);
+}
+var falls = null;
+async function loadFalls(updateFunction) {
+  if (falls) {
+    updateFunction(falls);
+    return;
+  }
+  const mapped = await getBase();
+  const priceFalls = mapped.sort((a, b) => {
+    return a.priceChange - b.priceChange;
+  });
+  falls = priceFalls;
+  updateFunction(priceFalls);
+}
+var valuable = null;
+async function loadMostValuable(updateFunction) {
+  if (valuable) {
+    updateFunction(valuable);
+    return;
+  }
+  const mapped = await getBase();
+  const mostValuable = mapped.sort((a, b) => {
+    return b.latestPrice - a.latestPrice;
+  });
+  valuable = mostValuable;
+  updateFunction(mostValuable);
+}
+var volume = null;
+async function loadMostTraded(updateFunction) {
+  if (volume) {
+    updateFunction(volume);
+    return;
+  }
+  const mapped = await getBase();
+  const mostTraded = mapped.sort((a, b) => {
+    return b.latestVolumeTraded - a.latestVolumeTraded;
+  });
+  volume = mostTraded;
+  updateFunction(mostTraded);
+}
+var baseData = null;
+async function getBase() {
+  if (baseData != null) return baseData.slice();
+  try {
+    const resp = await fetch("https://prices.runescape.wiki/api/v1/osrs/latest");
+    const data = await resp.json();
+    const latestPrices = Object.entries(data.data);
+    const respA = await fetch("https://prices.runescape.wiki/api/v1/osrs/1h");
+    const dataA = await respA.json();
+    const latest1hrPrices = Object.entries(dataA.data);
+    const yesterdayTimestamp = dataA.timestamp - 86400;
+    const respB = await fetch(`https://prices.runescape.wiki/api/v1/osrs/1h?timestamp=${yesterdayTimestamp}`);
+    const dataB = await respB.json();
+    const yesterdayPrices = Object.entries(dataB.data);
+    const respC = await fetch("https://prices.runescape.wiki/api/v1/osrs/mapping");
+    const details = await respC.json();
+    const items = details.reduce((coll, item) => {
+      const yesterdayArr = yesterdayPrices.find((price) => parseInt(price[0]) === item.id);
+      const yesterday = yesterdayArr ? yesterdayArr[1] : null;
+      const latest1hrArr = latest1hrPrices.find((price) => parseInt(price[0]) === item.id);
+      let latest;
+      if (latest1hrArr) latest = latest1hrArr[1];
+      else {
+        const latestArr = latestPrices.find((price) => parseInt(price[0]) === item.id);
+        if (!latestArr) return coll;
+        else {
+          const latestPrice2 = latestArr[1];
+          latest = {
+            avgHighPrice: latestPrice2.high,
+            highPriceVolume: yesterday ? yesterday.highPriceVolume : 0,
+            avgLowPrice: latestPrice2.low,
+            lowPriceVolume: yesterday ? yesterday.lowPriceVolume : 0
+          };
+        }
+      }
+      const latestPrice = (latest.avgHighPrice + latest.avgLowPrice) / 2;
+      const yesterdayPrice = yesterday ? (yesterday.avgHighPrice + yesterday.avgLowPrice) / 2 : null;
+      const priceChange = yesterday ? (latestPrice - yesterdayPrice) / yesterdayPrice * 100 : 0;
+      coll.push({
+        priceChange,
+        id: item.id,
+        name: item.name,
+        examine: item.examine,
+        members: item.members,
+        icon: item.icon.replaceAll(" ", "_"),
+        highAlch: item.highalch,
+        buyLimit: item.limit,
+        latestPrice: Math.round(latestPrice),
+        yesterdayPrice: Math.round(yesterdayPrice),
+        latestVolumeTraded: latest.highPriceVolume + latest.lowPriceVolume
+      });
+      return coll;
+    }, []);
+    baseData = items;
+    return items;
+  } catch (e) {
+    console.error(e);
+    return { error: e };
+  }
+}
+
+// src/Components/formatters.js
+function formatGP(gp) {
+  const mil = 1e7;
+  const k = 1e5;
+  if (gp >= mil) {
+    const money = Math.floor(gp / 1e6);
+    return {
+      gp: `${money}M`,
+      text: "text-[#14d814]"
+    };
+  } else if (gp >= k) {
+    const money = Math.floor(gp / 1e3);
+    return {
+      gp: `${money}K`,
+      text: "text-white"
+    };
+  } else {
+    return {
+      gp: `${gp} gp`,
+      text: ""
+    };
+  }
+}
+
+// src/Components/ItemInfo.jsx
+function ItemInfo({ item }) {
+  const [itemInfo, setItemInfo] = (0, import_react5.useState)(null);
+  const [loading, setLoading] = (0, import_react5.useState)(false);
+  (0, import_react5.useEffect)(() => {
+    console.log("useeffect");
+    if (item === null) return;
+    console.log("item not null");
+    setLoading(true);
+    loadInDepth(item, (info) => {
+      setItemInfo(info);
+      setLoading(false);
+    });
+  }, [item]);
+  if (loading) return /* @__PURE__ */ import_react5.default.createElement("div", { className: "size-full flex justify-center items-center" }, /* @__PURE__ */ import_react5.default.createElement(LoadingSpinner, null));
+  if (itemInfo === null) return /* @__PURE__ */ import_react5.default.createElement("div", { className: "text-center" }, "please select an item");
+  const formattedPrice = formatGP(itemInfo.latestPrice);
+  return /* @__PURE__ */ import_react5.default.createElement("div", { className: "flex flex-col flex-grow items-center border-2 border-border" }, /* @__PURE__ */ import_react5.default.createElement("div", { className: "flex flex-row w-full justify-center items-center border-2 border-border" }, /* @__PURE__ */ import_react5.default.createElement("div", { className: "flex-shrink-0 w-12 h-12" }, /* @__PURE__ */ import_react5.default.createElement("img", { src: `https://oldschool.runescape.wiki/images/${itemInfo.icon}`, alt: "", className: "no-blurry object-contain size-full" })), /* @__PURE__ */ import_react5.default.createElement("span", { className: "text-4xl" }, itemInfo.name)), /* @__PURE__ */ import_react5.default.createElement("div", { className: "flex flex-row w-full justify-center items-center gap-4 border-2 border-border" }, /* @__PURE__ */ import_react5.default.createElement("span", { className: "text-lg" }, itemInfo.examine), /* @__PURE__ */ import_react5.default.createElement("div", { className: "h-full border-l-2 border-border" }), /* @__PURE__ */ import_react5.default.createElement("div", { className: "flex flex-row text-lg gap-2" }, /* @__PURE__ */ import_react5.default.createElement("span", { className: formattedPrice.text }, formattedPrice.gp), item.priceChange >= 0 ? /* @__PURE__ */ import_react5.default.createElement("span", { className: "text-green-600" }, "+", item.priceChange.toFixed(2), "%") : /* @__PURE__ */ import_react5.default.createElement("span", { className: "text-red-600" }, item.priceChange.toFixed(2), "%"))), /* @__PURE__ */ import_react5.default.createElement(Graph, { itemInfo }));
+}
+function Graph(itemInfo) {
+  const [activeGraph, setActiveGraph] = (0, import_react5.useState)("prices");
+  const [timespan, setTimespan] = (0, import_react5.useState)("1month");
+  function setGraph(graph) {
+    setTimespan("1month");
+    setActiveGraph(graph);
+  }
+  return /* @__PURE__ */ import_react5.default.createElement("div", { className: "border-2 border-border size-full flex flex-col" }, /* @__PURE__ */ import_react5.default.createElement("div", { className: "flex flex-row" }, /* @__PURE__ */ import_react5.default.createElement(Button, { onClick: () => setGraph("prices"), active: activeGraph === "prices" }, "Price Changes"), /* @__PURE__ */ import_react5.default.createElement(Button, { onClick: () => setGraph("volume"), active: activeGraph === "volume" }, "Volume Traded")), /* @__PURE__ */ import_react5.default.createElement("div", { className: "flex flex-row" }, /* @__PURE__ */ import_react5.default.createElement(Button, { onClick: () => setTimespan("1month"), active: timespan === "1month" }, "1 Month"), /* @__PURE__ */ import_react5.default.createElement(Button, { onClick: () => setTimespan("3months"), active: timespan === "3months" }, "3 Months"), /* @__PURE__ */ import_react5.default.createElement(Button, { onClick: () => setTimespan("6months"), active: timespan === "6months" }, "6 Months")));
+}
+
+// src/Components/ItemList.jsx
+var import_react6 = __toESM(require_react());
+function ItemList({ items, activeItem, selectItem }) {
+  return /* @__PURE__ */ import_react6.default.createElement("div", { className: "flex flex-col max-w-[20rem] w-full max-h-full overflow-auto gap-1" }, items.slice(0, 99).map((item, ind) => /* @__PURE__ */ import_react6.default.createElement(Item, { key: ind, item, activeItem, selectItem })));
+}
+function Item({ item, activeItem, selectItem }) {
+  const formattedPrice = formatGP(item.latestPrice);
+  return /* @__PURE__ */ import_react6.default.createElement(
+    "button",
+    {
+      className: `text-rs-shadow px-2 pt-1.5 pb-1 border-[2px]
+      ${activeItem === item ? "border-rs-text bg-rs-dark" : "border-t-rs-border-light border-l-rs-border-light border-b-stone-800 border-r-stone-800 bg-rs-medium rounded-sm"}`,
+      onClick: () => selectItem(item)
+    },
+    /* @__PURE__ */ import_react6.default.createElement("div", { className: "flex flex-row items-center gap-2" }, /* @__PURE__ */ import_react6.default.createElement("div", { className: "flex-shrink-0 w-9 h-9" }, /* @__PURE__ */ import_react6.default.createElement("img", { src: `https://oldschool.runescape.wiki/images/${item.icon}`, alt: "", className: "no-blurry object-contain size-full" })), /* @__PURE__ */ import_react6.default.createElement("div", { className: "flex flex-col items-start" }, /* @__PURE__ */ import_react6.default.createElement("span", { className: "text-2xl text-start text-ellipsis whitespace-nowrap overflow-hidden w-[15rem]" }, item.name), /* @__PURE__ */ import_react6.default.createElement("div", { className: "flex flex-row text-lg gap-2" }, /* @__PURE__ */ import_react6.default.createElement("span", { className: formattedPrice.text }, formattedPrice.gp), item.priceChange >= 0 ? /* @__PURE__ */ import_react6.default.createElement("span", { className: "text-green-600" }, "+", item.priceChange.toFixed(2), "%") : /* @__PURE__ */ import_react6.default.createElement("span", { className: "text-red-600" }, item.priceChange.toFixed(2), "%"))))
+  );
+}
+
 // src/StockApp.jsx
 function StockApp() {
-  const [category, setCategory] = (0, import_react7.useState)(null);
+  const [activeItem, setActiveItem] = (0, import_react7.useState)(null);
+  const [loading, setLoading] = (0, import_react7.useState)(true);
+  const [items, setItems] = (0, import_react7.useState)(null);
+  const [category, setCategory] = (0, import_react7.useState)("rises");
   function updateCategory(category2) {
+    setLoading(true);
     setCategory(category2);
+    if (category2 === "rises") loadRises(loadItems);
+    else if (category2 === "falls") loadFalls(loadItems);
+    else if (category2 === "most-valuable") loadMostValuable(loadItems);
+    else if (category2 === "most-traded") loadMostTraded(loadItems);
+    else if (category2 === "my-list") setItems({ error: "my-list not implemented" });
+    else {
+      console.error("updating category to invalid category");
+    }
   }
-  return /* @__PURE__ */ import_react7.default.createElement("div", { className: "text-3xl max-h-screen w-screen flex flex-col items-center" }, /* @__PURE__ */ import_react7.default.createElement(RollingText, { className: "text-4xl pt-1", text: "OLD SCHOOL RUNESCAPE PRICES" }), /* @__PURE__ */ import_react7.default.createElement(Categories, { activeCategory: category, changeCategory: updateCategory }), /* @__PURE__ */ import_react7.default.createElement("div", { className: "flex flew-row w-full h-full" }, /* @__PURE__ */ import_react7.default.createElement(ItemList, { items: ["", "", "", "", "", "", "", "", "", "", "", ""] }), /* @__PURE__ */ import_react7.default.createElement(ItemInfo, { item: null }), /* @__PURE__ */ import_react7.default.createElement(LoadingSpinner, null)));
+  function loadItems(items2) {
+    setItems(items2);
+    setLoading(false);
+  }
+  (0, import_react7.useEffect)(() => {
+    loadRises(loadItems);
+  }, []);
+  let content = /* @__PURE__ */ import_react7.default.createElement(MainSection, { items, category, updateCategory, activeItem, selectItem: setActiveItem });
+  if (loading) content = /* @__PURE__ */ import_react7.default.createElement("div", { className: "size-full flex items-center justify-center" }, /* @__PURE__ */ import_react7.default.createElement(LoadingSpinner, null));
+  if (items?.error) content = "error!";
+  return /* @__PURE__ */ import_react7.default.createElement("div", { className: "text-3xl max-h-screen h-screen w-screen overflow-auto flex flex-col items-center" }, /* @__PURE__ */ import_react7.default.createElement(RollingText, { className: "text-4xl h1 border-b-2 border-border", text: "OLD SCHOOL RUNESCAPE GRAND EXCHANGE TRACKER -" }), /* @__PURE__ */ import_react7.default.createElement("div", { className: "flex flex-row size-full overflow-auto" }, /* @__PURE__ */ import_react7.default.createElement(RollingTextVertical, { flipped: true, className: "text-4xl", text: "IDK WHAT TO PUT BUT HERE WE GO -" }), content, /* @__PURE__ */ import_react7.default.createElement(RollingTextVertical, { className: "text-4xl", text: "WHEEEEEEEEEEEEEE -" })), /* @__PURE__ */ import_react7.default.createElement(RollingText, { className: "text-4xl border-t-2 border-border", text: "GOOD DESIGN BY ME -", toRight: true }));
+}
+function MainSection({ items, updateCategory, category, activeItem, selectItem }) {
+  return /* @__PURE__ */ import_react7.default.createElement("div", { className: "flex flex-col items-center overflow-auto size-full text-3xl" }, /* @__PURE__ */ import_react7.default.createElement(Categories, { changeCategory: updateCategory, category }), /* @__PURE__ */ import_react7.default.createElement("div", { className: "flex flew-row w-full overflow-auto max-h-full h-full" }, /* @__PURE__ */ import_react7.default.createElement(ItemList, { items, activeItem, selectItem }), /* @__PURE__ */ import_react7.default.createElement(ItemInfo, { item: activeItem })));
 }
 
 // src/entry.jsx
 import_client.default.createRoot(document.getElementById("root")).render(
-  /* @__PURE__ */ import_react8.default.createElement(import_react8.default.StrictMode, null, /* @__PURE__ */ import_react8.default.createElement(StockApp, null))
+  // <React.StrictMode>
+  /* @__PURE__ */ import_react8.default.createElement(StockApp, null)
+  //</React.StrictMode>
 );
 /*! Bundled license information:
 
