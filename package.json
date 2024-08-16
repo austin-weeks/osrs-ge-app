@@ -1,5 +1,6 @@
 {
   "name": "runescape-stock-app",
+  "author": "Austin Weeks",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
@@ -7,7 +8,6 @@
     "tailwind": "npx tailwindcss -i 'src/index.css' -o 'output.css' --watch"
   },
   "keywords": [],
-  "author": "",
   "license": "ISC",
   "description": "",
   "devDependencies": {

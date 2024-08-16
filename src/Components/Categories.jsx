@@ -1,23 +1,25 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import Button from "./Button";
+import { appContext } from "../StockApp";
 
-export default function Categories({ category, changeCategory }) {
+export default function Categories() {
+  const { currCategory, updateCategory } = useContext(appContext);
 
   return (
     <div className="flex flex-row w-full gap-1 items-center justify-center py-1">
       <Button>
         Search for Item
       </Button>
-      <Button active={category === 'rises'} onClick={() => changeCategory('rises')}>
+      <Button active={currCategory === 'rises'} onClick={() => updateCategory('rises')}>
         Price Rises
       </Button>
-      <Button active={category === 'falls'} onClick={() => changeCategory('falls')}>
+      <Button active={currCategory === 'falls'} onClick={() => updateCategory('falls')}>
         Price Falls
       </Button>
-      <Button active={category === 'most-valuable'} onClick={() => changeCategory('most-valuable')}>
+      <Button active={currCategory === 'most-valuable'} onClick={() => updateCategory('most-valuable')}>
         Most Valuable Trades
       </Button>
-      <Button active={category === 'most-traded'} onClick={() => changeCategory('most-traded')}>
+      <Button active={currCategory === 'most-traded'} onClick={() => updateCategory('most-traded')}>
         Most Traded
       </Button>
     </div>

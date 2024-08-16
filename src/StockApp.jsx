@@ -7,28 +7,34 @@ import LoadingSpinner from "./Components/LoadingSpinner";
 import { loadFalls, loadMostTraded, loadMostValuable, loadRises } from "./apiCalls";
 
 
-let catgegories = 'rises' || 'falls' || 'most-valuable' || 'most-traded' || 'my-list';
+// let catgegories = 'rises' || 'falls' || 'most-valuable' || 'most-traded' || 'my-list';
 
+export const appContext = React.createContext(null);
 
 export default function StockApp() {
-  const [activeItem, setActiveItem] = useState(null);
+  const [selectedItem, setSelectedItem] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [items, setItems] = useState(null);
-  const [category, setCategory] = useState('rises');
-  function updateCategory(category) {
+  const [currItems, setItems] = useState(null);
+  const [currCategory, setCategory] = useState('rises');
+
+  function updateCategory(updatedCategory) {
+    if (currCategory === updatedCategory) return;
+
     setLoading(true);
-    setCategory(category);
-    if (category === 'rises') loadRises(loadItems);
-    else if (category === 'falls')  loadFalls(loadItems);
-    else if (category === 'most-valuable') loadMostValuable(loadItems);
-    else if (category === 'most-traded') loadMostTraded(loadItems);
-    else if (category === 'my-list') setItems({error: 'my-list not implemented'});
+    setSelectedItem(null);
+    setCategory(updatedCategory);
+    if (updatedCategory === 'rises') loadRises(loadItems);
+    else if (updatedCategory === 'falls')  loadFalls(loadItems);
+    else if (updatedCategory === 'most-valuable') loadMostValuable(loadItems);
+    else if (updatedCategory === 'most-traded') loadMostTraded(loadItems);
+    else if (updatedCategory === 'my-list') setItems({error: 'my-list not implemented'});
     else {
       console.error('updating category to invalid category');
     }
   }
   function loadItems(items) {
     setItems(items);
+    setSelectedItem(items[0])
     setLoading(false);
   }
 
@@ -37,13 +43,13 @@ export default function StockApp() {
   }, [])
 
 
-  let content = <MainSection items={items} category={category} updateCategory={updateCategory} activeItem={activeItem} selectItem={setActiveItem} />;
+  let content = <MainSection />;
   if (loading) content = (
     <div className="size-full flex items-center justify-center">
       <LoadingSpinner />
     </div>
   );
-  if (items?.error) content = 'error!';
+  if (currItems?.error) content = 'error!';
 
   return (
     <div className="text-3xl max-h-screen h-screen w-screen overflow-auto flex flex-col items-center">
@@ -52,7 +58,15 @@ export default function StockApp() {
         <RollingTextVertical flipped className="text-4xl" text="IDK WHAT TO PUT BUT HERE WE GO -" />
 
         {/* Main app section */}
-        {content}
+        <appContext.Provider value={{
+          currItems,
+          currCategory,
+          selectedItem,
+          updateCategory,
+          setSelectedItem
+        }}>
+          {content}
+        </appContext.Provider>
 
         <RollingTextVertical className="text-4xl" text="WHEEEEEEEEEEEEEE -" />
       </div>
@@ -61,13 +75,13 @@ export default function StockApp() {
   );
 }
 
-function MainSection({ items, updateCategory, category, activeItem, selectItem }) {
+function MainSection() {
   return (
     <div className="flex flex-col items-center overflow-auto size-full text-3xl">
-      <Categories changeCategory={updateCategory} category={category} />
+      <Categories />
       <div className="flex flew-row w-full overflow-auto max-h-full h-full">
-        <ItemList items={items} activeItem={activeItem} selectItem={selectItem} />
-        <ItemInfo item={activeItem} />
+        <ItemList />
+        <ItemInfo />
         {/* <LoadingSpinner /> */}
       </div>
     </div>

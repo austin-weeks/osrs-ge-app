@@ -1,23 +1,26 @@
-import React, { act } from "react";
+import React, { act, useContext } from "react";
 import { formatGP } from "./formatters";
+import { appContext } from "../StockApp";
 
-export default function ItemList({ items, activeItem, selectItem }) {
+export default function ItemList() {
+  const { currItems } = useContext(appContext);
   
   return (
     <div className="flex flex-col max-w-[20rem] w-full max-h-full overflow-auto gap-1">
-      {items.slice(0, 99).map((item, ind) => <Item key={ind} item={item} activeItem={activeItem} selectItem={selectItem} />)}
+      {currItems.slice(0, 99).map((item, ind) => <Item key={ind} item={item} />)}
     </div>
   );
 }
 
-function Item({ item, activeItem, selectItem }) {
+function Item({ item }) {
+  const { selectedItem, setSelectedItem } = useContext(appContext);
   const formattedPrice = formatGP(item.latestPrice);
 
   return (
     <button className={`text-rs-shadow px-2 pt-1.5 pb-1 border-[2px]
-      ${activeItem === item ? 'border-rs-text bg-rs-dark'
+      ${selectedItem === item ? 'border-rs-text bg-rs-dark'
       : 'border-t-rs-border-light border-l-rs-border-light border-b-stone-800 border-r-stone-800 bg-rs-medium rounded-sm'}`}
-      onClick={() => selectItem(item)}
+      onClick={() => setSelectedItem(item)}
     >
       <div className="flex flex-row items-center gap-2">
         <div className="flex-shrink-0 w-9 h-9">

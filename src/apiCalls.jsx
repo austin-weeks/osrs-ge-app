@@ -1,7 +1,10 @@
 
-export async function loadInDepth(item, setItem) {
-  await new Promise(resolve => setTimeout(resolve, 500))
-  setItem(item);
+export async function loadPriceHistory(itemId, setPriceHistory) {
+  const resp =  await fetch(`https://austinweeks.dev/api/ge-tracker/item/${itemId}`);
+  const data = await resp.json();
+  const history = Object.entries(data);
+  console.log(history)
+  setPriceHistory(history);
 }
 
 
@@ -84,6 +87,13 @@ async function getBase() {
     const respC = await fetch('https://prices.runescape.wiki/api/v1/osrs/mapping');
     const details = await respC.json();
 
+    console.group('API Calls');
+      console.log('All Items', details.length);
+      console.log('Latest', latestPrices.length);
+      console.log('Last Hour', latest1hrPrices.length);
+      console.log('Yesterday', yesterdayPrices.length);
+    console.groupEnd();
+
     //YOU CAN REFACTOR WITH THE .REDUCE() METHOD TO REMOVE ITEMS WITH NO PRICE INFO
     const items = details.reduce((coll, item) => {
       const yesterdayArr = yesterdayPrices.find(price => parseInt(price[0]) === item.id);
@@ -105,6 +115,7 @@ async function getBase() {
           }
         }
       }
+
       
       const latestPrice = (latest.avgHighPrice + latest.avgLowPrice) / 2;
       const yesterdayPrice = yesterday ? (yesterday.avgHighPrice + yesterday.avgLowPrice) / 2 : null;
@@ -118,6 +129,7 @@ async function getBase() {
         examine: item.examine,
         members: item.members,
         icon: item.icon.replaceAll(' ', '_'),
+        wikiLink: item.icon.replaceAll(' ', '_').slice(0, item.icon.length - 4),
         highAlch: item.highalch,
         buyLimit: item.limit,
         latestPrice: Math.round(latestPrice),

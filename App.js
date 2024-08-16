@@ -1069,7 +1069,7 @@ var require_react_development = __commonJS({
           }
           return dispatcher;
         }
-        function useContext(Context) {
+        function useContext4(Context) {
           var dispatcher = resolveDispatcher();
           {
             if (Context._context !== void 0) {
@@ -1704,7 +1704,7 @@ var require_react_development = __commonJS({
         }
         var actScopeDepth = 0;
         var didWarnNoAwaitAct = false;
-        function act2(callback) {
+        function act3(callback) {
           {
             var prevActScopeDepth = actScopeDepth;
             actScopeDepth++;
@@ -1862,7 +1862,7 @@ var require_react_development = __commonJS({
         exports.StrictMode = REACT_STRICT_MODE_TYPE;
         exports.Suspense = REACT_SUSPENSE_TYPE;
         exports.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED = ReactSharedInternals;
-        exports.act = act2;
+        exports.act = act3;
         exports.cloneElement = cloneElement$1;
         exports.createContext = createContext;
         exports.createElement = createElement$1;
@@ -1873,9 +1873,9 @@ var require_react_development = __commonJS({
         exports.lazy = lazy;
         exports.memo = memo;
         exports.startTransition = startTransition;
-        exports.unstable_act = act2;
+        exports.unstable_act = act3;
         exports.useCallback = useCallback;
-        exports.useContext = useContext;
+        exports.useContext = useContext4;
         exports.useDebugValue = useDebugValue;
         exports.useDeferredValue = useDeferredValue;
         exports.useEffect = useEffect3;
@@ -23557,8 +23557,9 @@ function Button({ active, ...props }) {
 }
 
 // src/Components/Categories.jsx
-function Categories({ category, changeCategory }) {
-  return /* @__PURE__ */ import_react3.default.createElement("div", { className: "flex flex-row w-full gap-1 items-center justify-center py-1" }, /* @__PURE__ */ import_react3.default.createElement(Button, null, "Search for Item"), /* @__PURE__ */ import_react3.default.createElement(Button, { active: category === "rises", onClick: () => changeCategory("rises") }, "Price Rises"), /* @__PURE__ */ import_react3.default.createElement(Button, { active: category === "falls", onClick: () => changeCategory("falls") }, "Price Falls"), /* @__PURE__ */ import_react3.default.createElement(Button, { active: category === "most-valuable", onClick: () => changeCategory("most-valuable") }, "Most Valuable Trades"), /* @__PURE__ */ import_react3.default.createElement(Button, { active: category === "most-traded", onClick: () => changeCategory("most-traded") }, "Most Traded"));
+function Categories() {
+  const { currCategory, updateCategory } = (0, import_react3.useContext)(appContext);
+  return /* @__PURE__ */ import_react3.default.createElement("div", { className: "flex flex-row w-full gap-1 items-center justify-center py-1" }, /* @__PURE__ */ import_react3.default.createElement(Button, null, "Search for Item"), /* @__PURE__ */ import_react3.default.createElement(Button, { active: currCategory === "rises", onClick: () => updateCategory("rises") }, "Price Rises"), /* @__PURE__ */ import_react3.default.createElement(Button, { active: currCategory === "falls", onClick: () => updateCategory("falls") }, "Price Falls"), /* @__PURE__ */ import_react3.default.createElement(Button, { active: currCategory === "most-valuable", onClick: () => updateCategory("most-valuable") }, "Most Valuable Trades"), /* @__PURE__ */ import_react3.default.createElement(Button, { active: currCategory === "most-traded", onClick: () => updateCategory("most-traded") }, "Most Traded"));
 }
 
 // src/Components/ItemInfo.jsx
@@ -23589,9 +23590,12 @@ function LoadingSpinner() {
 }
 
 // src/apiCalls.jsx
-async function loadInDepth(item, setItem) {
-  await new Promise((resolve) => setTimeout(resolve, 500));
-  setItem(item);
+async function loadPriceHistory(itemId, setPriceHistory) {
+  const resp = await fetch(`https://austinweeks.dev/api/ge-tracker/item/${itemId}`);
+  const data = await resp.json();
+  const history = Object.entries(data);
+  console.log(history);
+  setPriceHistory(history);
 }
 var rises = null;
 async function loadRises(updateFunction) {
@@ -23661,6 +23665,12 @@ async function getBase() {
     const yesterdayPrices = Object.entries(dataB.data);
     const respC = await fetch("https://prices.runescape.wiki/api/v1/osrs/mapping");
     const details = await respC.json();
+    console.group("API Calls");
+    console.log("All Items", details.length);
+    console.log("Latest", latestPrices.length);
+    console.log("Last Hour", latest1hrPrices.length);
+    console.log("Yesterday", yesterdayPrices.length);
+    console.groupEnd();
     const items = details.reduce((coll, item) => {
       const yesterdayArr = yesterdayPrices.find((price) => parseInt(price[0]) === item.id);
       const yesterday = yesterdayArr ? yesterdayArr[1] : null;
@@ -23690,6 +23700,7 @@ async function getBase() {
         examine: item.examine,
         members: item.members,
         icon: item.icon.replaceAll(" ", "_"),
+        wikiLink: item.icon.replaceAll(" ", "_").slice(0, item.icon.length - 4),
         highAlch: item.highalch,
         buyLimit: item.limit,
         latestPrice: Math.round(latestPrice),
@@ -23731,84 +23742,99 @@ function formatGP(gp) {
 }
 
 // src/Components/ItemInfo.jsx
-function ItemInfo({ item }) {
-  const [itemInfo, setItemInfo] = (0, import_react5.useState)(null);
+function ItemInfo() {
+  const { selectedItem } = (0, import_react5.useContext)(appContext);
+  if (selectedItem == null) return /* @__PURE__ */ import_react5.default.createElement("div", { className: "flex justify-center items-center w-full" }, /* @__PURE__ */ import_react5.default.createElement("div", { className: "text-center w-full" }, "Please select an item"));
+  const formattedPrice = formatGP(selectedItem.latestPrice);
+  return /* @__PURE__ */ import_react5.default.createElement("div", { className: "flex flex-col flex-grow items-center border-2 border-border" }, /* @__PURE__ */ import_react5.default.createElement("div", { className: "flex flex-row relative w-full justify-center gap-3 items-center border-2 border-border" }, /* @__PURE__ */ import_react5.default.createElement("div", { className: "flex-shrink-0 w-12 h-12" }, /* @__PURE__ */ import_react5.default.createElement("img", { src: `https://oldschool.runescape.wiki/images/${selectedItem.icon}`, alt: "", className: "no-blurry object-contain size-full" })), /* @__PURE__ */ import_react5.default.createElement("span", { className: "text-[2.75rem]" }, selectedItem.name), /* @__PURE__ */ import_react5.default.createElement("div", { className: "absolute right-1.5 top-0 h-full" }, /* @__PURE__ */ import_react5.default.createElement("a", { href: `https://oldschool.runescape.wiki/w/${selectedItem.wikiLink}`, target: "_blank", className: "cursor-alias" }, /* @__PURE__ */ import_react5.default.createElement("img", { src: "https://oldschool.runescape.wiki/images/Wiki@2x.png", alt: "osrs wiki", className: "object-cover h-full" })))), /* @__PURE__ */ import_react5.default.createElement("div", { className: "flex flex-row w-full justify-center items-center gap-4 border-2 border-border" }, /* @__PURE__ */ import_react5.default.createElement("span", { className: "text-xl" }, selectedItem.examine), /* @__PURE__ */ import_react5.default.createElement("div", { className: "h-full border-l-2 border-border" }), /* @__PURE__ */ import_react5.default.createElement("div", { className: "flex flex-row text-xl gap-2" }, /* @__PURE__ */ import_react5.default.createElement("span", { className: formattedPrice.text }, formattedPrice.gp), selectedItem.priceChange >= 0 ? /* @__PURE__ */ import_react5.default.createElement("span", { className: "text-green-600" }, "+", selectedItem.priceChange.toFixed(2), "%") : /* @__PURE__ */ import_react5.default.createElement("span", { className: "text-red-600" }, selectedItem.priceChange.toFixed(2), "%"))), /* @__PURE__ */ import_react5.default.createElement(Graph, null));
+}
+function Graph() {
+  const { selectedItem } = (0, import_react5.useContext)(appContext);
+  const [priceHistory, setPriceHistory] = (0, import_react5.useState)(null);
   const [loading, setLoading] = (0, import_react5.useState)(false);
   (0, import_react5.useEffect)(() => {
-    console.log("useeffect");
-    if (item === null) return;
-    console.log("item not null");
+    if (selectedItem === null) {
+      setPriceHistory(null);
+      return;
+    }
     setLoading(true);
-    loadInDepth(item, (info) => {
-      setItemInfo(info);
+    loadPriceHistory(selectedItem.id, (data) => {
+      setPriceHistory(data);
       setLoading(false);
     });
-  }, [item]);
-  if (loading) return /* @__PURE__ */ import_react5.default.createElement("div", { className: "size-full flex justify-center items-center" }, /* @__PURE__ */ import_react5.default.createElement(LoadingSpinner, null));
-  if (itemInfo === null) return /* @__PURE__ */ import_react5.default.createElement("div", { className: "text-center" }, "please select an item");
-  const formattedPrice = formatGP(itemInfo.latestPrice);
-  return /* @__PURE__ */ import_react5.default.createElement("div", { className: "flex flex-col flex-grow items-center border-2 border-border" }, /* @__PURE__ */ import_react5.default.createElement("div", { className: "flex flex-row w-full justify-center items-center border-2 border-border" }, /* @__PURE__ */ import_react5.default.createElement("div", { className: "flex-shrink-0 w-12 h-12" }, /* @__PURE__ */ import_react5.default.createElement("img", { src: `https://oldschool.runescape.wiki/images/${itemInfo.icon}`, alt: "", className: "no-blurry object-contain size-full" })), /* @__PURE__ */ import_react5.default.createElement("span", { className: "text-4xl" }, itemInfo.name)), /* @__PURE__ */ import_react5.default.createElement("div", { className: "flex flex-row w-full justify-center items-center gap-4 border-2 border-border" }, /* @__PURE__ */ import_react5.default.createElement("span", { className: "text-lg" }, itemInfo.examine), /* @__PURE__ */ import_react5.default.createElement("div", { className: "h-full border-l-2 border-border" }), /* @__PURE__ */ import_react5.default.createElement("div", { className: "flex flex-row text-lg gap-2" }, /* @__PURE__ */ import_react5.default.createElement("span", { className: formattedPrice.text }, formattedPrice.gp), item.priceChange >= 0 ? /* @__PURE__ */ import_react5.default.createElement("span", { className: "text-green-600" }, "+", item.priceChange.toFixed(2), "%") : /* @__PURE__ */ import_react5.default.createElement("span", { className: "text-red-600" }, item.priceChange.toFixed(2), "%"))), /* @__PURE__ */ import_react5.default.createElement(Graph, { itemInfo }));
-}
-function Graph(itemInfo) {
+  }, [selectedItem]);
   const [activeGraph, setActiveGraph] = (0, import_react5.useState)("prices");
   const [timespan, setTimespan] = (0, import_react5.useState)("1month");
   function setGraph(graph) {
-    setTimespan("1month");
     setActiveGraph(graph);
   }
-  return /* @__PURE__ */ import_react5.default.createElement("div", { className: "border-2 border-border size-full flex flex-col" }, /* @__PURE__ */ import_react5.default.createElement("div", { className: "flex flex-row" }, /* @__PURE__ */ import_react5.default.createElement(Button, { onClick: () => setGraph("prices"), active: activeGraph === "prices" }, "Price Changes"), /* @__PURE__ */ import_react5.default.createElement(Button, { onClick: () => setGraph("volume"), active: activeGraph === "volume" }, "Volume Traded")), /* @__PURE__ */ import_react5.default.createElement("div", { className: "flex flex-row" }, /* @__PURE__ */ import_react5.default.createElement(Button, { onClick: () => setTimespan("1month"), active: timespan === "1month" }, "1 Month"), /* @__PURE__ */ import_react5.default.createElement(Button, { onClick: () => setTimespan("3months"), active: timespan === "3months" }, "3 Months"), /* @__PURE__ */ import_react5.default.createElement(Button, { onClick: () => setTimespan("6months"), active: timespan === "6months" }, "6 Months")));
+  if (loading || priceHistory == null) return /* @__PURE__ */ import_react5.default.createElement("div", { className: "size-full flex justify-center items-center" }, /* @__PURE__ */ import_react5.default.createElement(LoadingSpinner, null));
+  console.log(selectedItem, priceHistory);
+  return /* @__PURE__ */ import_react5.default.createElement("div", { className: "border-2 border-border size-full flex flex-col" }, /* @__PURE__ */ import_react5.default.createElement("div", { className: "flex flex-row" }, /* @__PURE__ */ import_react5.default.createElement(Button, { onClick: () => setGraph("prices"), active: activeGraph === "prices" }, "Price Changes"), /* @__PURE__ */ import_react5.default.createElement(Button, { onClick: () => setGraph("volume"), active: activeGraph === "volume" }, "Volume Traded")), /* @__PURE__ */ import_react5.default.createElement("div", { className: "flex flex-row" }, /* @__PURE__ */ import_react5.default.createElement(Button, { onClick: () => setTimespan("1month"), active: timespan === "1month" }, "1 Month"), /* @__PURE__ */ import_react5.default.createElement(Button, { onClick: () => setTimespan("3months"), active: timespan === "3months" }, "3 Months"), /* @__PURE__ */ import_react5.default.createElement(Button, { onClick: () => setTimespan("6months"), active: timespan === "6months" }, "6 Months")), /* @__PURE__ */ import_react5.default.createElement("div", null, "graph :)", priceHistory.map((item) => /* @__PURE__ */ import_react5.default.createElement("div", null, item[1]))));
 }
 
 // src/Components/ItemList.jsx
 var import_react6 = __toESM(require_react());
-function ItemList({ items, activeItem, selectItem }) {
-  return /* @__PURE__ */ import_react6.default.createElement("div", { className: "flex flex-col max-w-[20rem] w-full max-h-full overflow-auto gap-1" }, items.slice(0, 99).map((item, ind) => /* @__PURE__ */ import_react6.default.createElement(Item, { key: ind, item, activeItem, selectItem })));
+function ItemList() {
+  const { currItems } = (0, import_react6.useContext)(appContext);
+  return /* @__PURE__ */ import_react6.default.createElement("div", { className: "flex flex-col max-w-[20rem] w-full max-h-full overflow-auto gap-1" }, currItems.slice(0, 99).map((item, ind) => /* @__PURE__ */ import_react6.default.createElement(Item, { key: ind, item })));
 }
-function Item({ item, activeItem, selectItem }) {
+function Item({ item }) {
+  const { selectedItem, setSelectedItem } = (0, import_react6.useContext)(appContext);
   const formattedPrice = formatGP(item.latestPrice);
   return /* @__PURE__ */ import_react6.default.createElement(
     "button",
     {
       className: `text-rs-shadow px-2 pt-1.5 pb-1 border-[2px]
-      ${activeItem === item ? "border-rs-text bg-rs-dark" : "border-t-rs-border-light border-l-rs-border-light border-b-stone-800 border-r-stone-800 bg-rs-medium rounded-sm"}`,
-      onClick: () => selectItem(item)
+      ${selectedItem === item ? "border-rs-text bg-rs-dark" : "border-t-rs-border-light border-l-rs-border-light border-b-stone-800 border-r-stone-800 bg-rs-medium rounded-sm"}`,
+      onClick: () => setSelectedItem(item)
     },
     /* @__PURE__ */ import_react6.default.createElement("div", { className: "flex flex-row items-center gap-2" }, /* @__PURE__ */ import_react6.default.createElement("div", { className: "flex-shrink-0 w-9 h-9" }, /* @__PURE__ */ import_react6.default.createElement("img", { src: `https://oldschool.runescape.wiki/images/${item.icon}`, alt: "", className: "no-blurry object-contain size-full" })), /* @__PURE__ */ import_react6.default.createElement("div", { className: "flex flex-col items-start" }, /* @__PURE__ */ import_react6.default.createElement("span", { className: "text-2xl text-start text-ellipsis whitespace-nowrap overflow-hidden w-[15rem]" }, item.name), /* @__PURE__ */ import_react6.default.createElement("div", { className: "flex flex-row text-lg gap-2" }, /* @__PURE__ */ import_react6.default.createElement("span", { className: formattedPrice.text }, formattedPrice.gp), item.priceChange >= 0 ? /* @__PURE__ */ import_react6.default.createElement("span", { className: "text-green-600" }, "+", item.priceChange.toFixed(2), "%") : /* @__PURE__ */ import_react6.default.createElement("span", { className: "text-red-600" }, item.priceChange.toFixed(2), "%"))))
   );
 }
 
 // src/StockApp.jsx
+var appContext = import_react7.default.createContext(null);
 function StockApp() {
-  const [activeItem, setActiveItem] = (0, import_react7.useState)(null);
+  const [selectedItem, setSelectedItem] = (0, import_react7.useState)(null);
   const [loading, setLoading] = (0, import_react7.useState)(true);
-  const [items, setItems] = (0, import_react7.useState)(null);
-  const [category, setCategory] = (0, import_react7.useState)("rises");
-  function updateCategory(category2) {
+  const [currItems, setItems] = (0, import_react7.useState)(null);
+  const [currCategory, setCategory] = (0, import_react7.useState)("rises");
+  function updateCategory(updatedCategory) {
+    if (currCategory === updatedCategory) return;
     setLoading(true);
-    setCategory(category2);
-    if (category2 === "rises") loadRises(loadItems);
-    else if (category2 === "falls") loadFalls(loadItems);
-    else if (category2 === "most-valuable") loadMostValuable(loadItems);
-    else if (category2 === "most-traded") loadMostTraded(loadItems);
-    else if (category2 === "my-list") setItems({ error: "my-list not implemented" });
+    setSelectedItem(null);
+    setCategory(updatedCategory);
+    if (updatedCategory === "rises") loadRises(loadItems);
+    else if (updatedCategory === "falls") loadFalls(loadItems);
+    else if (updatedCategory === "most-valuable") loadMostValuable(loadItems);
+    else if (updatedCategory === "most-traded") loadMostTraded(loadItems);
+    else if (updatedCategory === "my-list") setItems({ error: "my-list not implemented" });
     else {
       console.error("updating category to invalid category");
     }
   }
-  function loadItems(items2) {
-    setItems(items2);
+  function loadItems(items) {
+    setItems(items);
+    setSelectedItem(items[0]);
     setLoading(false);
   }
   (0, import_react7.useEffect)(() => {
     loadRises(loadItems);
   }, []);
-  let content = /* @__PURE__ */ import_react7.default.createElement(MainSection, { items, category, updateCategory, activeItem, selectItem: setActiveItem });
+  let content = /* @__PURE__ */ import_react7.default.createElement(MainSection, null);
   if (loading) content = /* @__PURE__ */ import_react7.default.createElement("div", { className: "size-full flex items-center justify-center" }, /* @__PURE__ */ import_react7.default.createElement(LoadingSpinner, null));
-  if (items?.error) content = "error!";
-  return /* @__PURE__ */ import_react7.default.createElement("div", { className: "text-3xl max-h-screen h-screen w-screen overflow-auto flex flex-col items-center" }, /* @__PURE__ */ import_react7.default.createElement(RollingText, { className: "text-4xl h1 border-b-2 border-border", text: "OLD SCHOOL RUNESCAPE GRAND EXCHANGE TRACKER -" }), /* @__PURE__ */ import_react7.default.createElement("div", { className: "flex flex-row size-full overflow-auto" }, /* @__PURE__ */ import_react7.default.createElement(RollingTextVertical, { flipped: true, className: "text-4xl", text: "IDK WHAT TO PUT BUT HERE WE GO -" }), content, /* @__PURE__ */ import_react7.default.createElement(RollingTextVertical, { className: "text-4xl", text: "WHEEEEEEEEEEEEEE -" })), /* @__PURE__ */ import_react7.default.createElement(RollingText, { className: "text-4xl border-t-2 border-border", text: "GOOD DESIGN BY ME -", toRight: true }));
+  if (currItems?.error) content = "error!";
+  return /* @__PURE__ */ import_react7.default.createElement("div", { className: "text-3xl max-h-screen h-screen w-screen overflow-auto flex flex-col items-center" }, /* @__PURE__ */ import_react7.default.createElement(RollingText, { className: "text-4xl h1 border-b-2 border-border", text: "OLD SCHOOL RUNESCAPE GRAND EXCHANGE TRACKER -" }), /* @__PURE__ */ import_react7.default.createElement("div", { className: "flex flex-row size-full overflow-auto" }, /* @__PURE__ */ import_react7.default.createElement(RollingTextVertical, { flipped: true, className: "text-4xl", text: "IDK WHAT TO PUT BUT HERE WE GO -" }), /* @__PURE__ */ import_react7.default.createElement(appContext.Provider, { value: {
+    currItems,
+    currCategory,
+    selectedItem,
+    updateCategory,
+    setSelectedItem
+  } }, content), /* @__PURE__ */ import_react7.default.createElement(RollingTextVertical, { className: "text-4xl", text: "WHEEEEEEEEEEEEEE -" })), /* @__PURE__ */ import_react7.default.createElement(RollingText, { className: "text-4xl border-t-2 border-border", text: "GOOD DESIGN BY ME -", toRight: true }));
 }
-function MainSection({ items, updateCategory, category, activeItem, selectItem }) {
-  return /* @__PURE__ */ import_react7.default.createElement("div", { className: "flex flex-col items-center overflow-auto size-full text-3xl" }, /* @__PURE__ */ import_react7.default.createElement(Categories, { changeCategory: updateCategory, category }), /* @__PURE__ */ import_react7.default.createElement("div", { className: "flex flew-row w-full overflow-auto max-h-full h-full" }, /* @__PURE__ */ import_react7.default.createElement(ItemList, { items, activeItem, selectItem }), /* @__PURE__ */ import_react7.default.createElement(ItemInfo, { item: activeItem })));
+function MainSection() {
+  return /* @__PURE__ */ import_react7.default.createElement("div", { className: "flex flex-col items-center overflow-auto size-full text-3xl" }, /* @__PURE__ */ import_react7.default.createElement(Categories, null), /* @__PURE__ */ import_react7.default.createElement("div", { className: "flex flew-row w-full overflow-auto max-h-full h-full" }, /* @__PURE__ */ import_react7.default.createElement(ItemList, null), /* @__PURE__ */ import_react7.default.createElement(ItemInfo, null)));
 }
 
 // src/entry.jsx
