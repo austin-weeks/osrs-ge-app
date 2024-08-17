@@ -1,9 +1,7 @@
-import React, { act, useContext, useEffect, useState } from "react";
-import LoadingSpinner from "./LoadingSpinner";
-import { loadPriceHistory as loadPriceHistory } from "../apiCalls";
+import React, { act, useContext } from "react";
 import { formatGP } from "./formatters";
-import Button from "./Button";
 import { appContext } from "../StockApp";
+import Graph from "./Graph";
 
 export default function ItemInfo() {
   const { selectedItem } = useContext(appContext);
@@ -18,17 +16,23 @@ export default function ItemInfo() {
 
   return (
     <div className="flex flex-col flex-grow items-center border-2 border-border">
-      <div className="flex flex-row relative w-full justify-center gap-3 items-center border-2 border-border">
-        <div className="flex-shrink-0 w-12 h-12">
-          <img src={`https://oldschool.runescape.wiki/images/${selectedItem.icon}`} alt="" className="no-blurry object-contain size-full" />
+      <div className="flex flex-row w-full justify-between items-center px-2 py-1 border-2 border-border">
+        <div className="flex flex-row gap-3 justify-center items-center">
+          <div className="flex-shrink-0 w-11 h-11">
+            <img src={`https://oldschool.runescape.wiki/images/${selectedItem.icon}`} alt="" className="no-blurry object-contain size-full" />
+          </div>
+          <span className="text-[2.75rem] text-ellipsis">{selectedItem.name}</span>
         </div>
-        <span className="text-[2.75rem]">{selectedItem.name}</span>
-        <div className="absolute right-1.5 top-0 h-full">
-          <a href={`https://oldschool.runescape.wiki/w/${selectedItem.wikiLink}`} target="_blank" className="cursor-alias">
-            <img src="https://oldschool.runescape.wiki/images/Wiki@2x.png" alt="osrs wiki" className="object-cover h-full" />
+        <div className="flex flex-row gap-3 justify-center items-center h-12">
+          <button className="rounded-full bg-border w-9 h-9 flex justify-center items-center">
+            <span className="text-green-500">+</span>
+          </button>
+          <a href={`https://oldschool.runescape.wiki/w/${selectedItem.wikiLink}`} target="_blank" className="cursor-alias w-12 h-full">
+            <img src="https://oldschool.runescape.wiki/images/Wiki@2x.png" alt="osrs wiki" className="object-contain h-full" />
           </a>
         </div>
       </div>
+
       <div className="flex flex-row w-full justify-center items-center gap-4 border-2 border-border">
         <span className="text-xl">{selectedItem.examine}</span>
         <div className="h-full border-l-2 border-border"></div>
@@ -41,65 +45,9 @@ export default function ItemInfo() {
           )}
         </div>
       </div>
+
       <Graph />
-    </div>
-  );
-}
 
-function Graph() {
-  const { selectedItem } = useContext(appContext);
-  const [priceHistory, setPriceHistory] = useState(null);
-  const [loading, setLoading] = useState(false);
-  useEffect(() => {
-    if (selectedItem === null) {
-      setPriceHistory(null);
-      return;
-    }
-    setLoading(true);
-    loadPriceHistory(selectedItem.id, (data) => {
-      setPriceHistory(data);
-      setLoading(false);
-    });
-  }, [selectedItem]);
-
-  const [activeGraph, setActiveGraph] = useState('prices');
-  const [timespan, setTimespan] = useState('1month');
-  function setGraph(graph) {
-    // setTimespan('1month');
-    setActiveGraph(graph);
-  }
-
-  if (loading || priceHistory == null) return (
-    <div className="size-full flex justify-center items-center">
-      <LoadingSpinner />
-    </div>
-  );
-  console.log(selectedItem,priceHistory)
-  return (
-    <div className="border-2 border-border size-full flex flex-col">
-      <div className="flex flex-row">
-        <Button onClick={() => setGraph('prices')} active={activeGraph === 'prices'}>
-          Price Changes
-        </Button>
-        <Button onClick={() => setGraph('volume')} active={activeGraph === 'volume'}>
-          Volume Traded
-        </Button>
-      </div>
-      <div className="flex flex-row">
-        <Button onClick={() => setTimespan('1month')} active={timespan === '1month'}>
-          1 Month
-        </Button>
-        <Button onClick={() => setTimespan('3months')} active={timespan === '3months'}>
-          3 Months
-        </Button>
-        <Button onClick={() => setTimespan('6months')} active={timespan === '6months'}>
-          6 Months
-        </Button>
-      </div>
-      <div>
-        graph :)
-        {priceHistory.map(item => (<div>{item[1]}</div>))}
-      </div>
     </div>
   );
 }

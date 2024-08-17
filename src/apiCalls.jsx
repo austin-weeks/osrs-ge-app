@@ -2,7 +2,42 @@
 export async function loadPriceHistory(itemId, setPriceHistory) {
   const resp =  await fetch(`https://austinweeks.dev/api/ge-tracker/item/${itemId}`);
   const data = await resp.json();
-  const history = Object.entries(data);
+  let volume;
+  try {
+    const resp = await fetch(`https://api.weirdgloop.org/exchange/history/osrs/last90d?id=${itemId}`);
+    const data = await resp.json();
+    volume = data[itemId.toString()]
+  } catch (e) {
+    volume = {error: 'could not load volume history'}
+  }
+  let prevDaily;
+  let prevAverage;
+  //Date and Price/Volume are capitalized in order to display correct legends on the graphs.
+  const history = {
+    daily: Object.entries(data.daily).map(data => {
+      const entry = {
+        Date: new Date(parseInt(data[0])),
+        Price: data[1], 
+        prev: prevDaily || data[1]
+      };
+      prevDaily = data[1];
+      return entry;
+    }),
+    average: Object.entries(data.average).map(data => {
+      const entry = {
+        date: new Date(parseInt(data[0])),
+        price: data[1],
+        prev: prevAverage || data[1]
+      };
+      prevAverage = data[1];
+      return entry;
+    }),
+    volume: volume.map(data => ({
+      Date: new Date(data.timestamp),
+      Volume: data.volume 
+    }))
+  };
+
   console.log(history)
   setPriceHistory(history);
 }
