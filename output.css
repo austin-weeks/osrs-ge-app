@@ -455,7 +455,7 @@ video {
 
   font-display: swap;
 
-  src: url(/runescape.ttf);
+  src: url(../assets/runescape.ttf);
 }
 
 *, ::before, ::after {

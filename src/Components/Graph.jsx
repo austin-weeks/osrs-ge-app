@@ -2,8 +2,8 @@ import React, { useContext, useEffect, useState } from "react";
 import { appContext } from "../StockApp";
 import Button from "./Button";
 import LoadingSpinner from "./LoadingSpinner";
-import { loadPriceHistory } from "../apiCalls";
 import loadLineChart from "./plotCharts";
+import loadPriceHistory from "../../API Calls/priceHistory";
 
 export default function Graph() {
   const { selectedItem } = useContext(appContext);

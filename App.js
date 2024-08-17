@@ -23666,167 +23666,6 @@ function LoadingSpinner({ style = "runes", randomize = false }) {
   )));
 }
 
-// src/apiCalls.jsx
-async function loadPriceHistory(itemId, setPriceHistory) {
-  const resp = await fetch(`https://austinweeks.dev/api/ge-tracker/item/${itemId}`);
-  const data = await resp.json();
-  let volume2;
-  try {
-    const resp2 = await fetch(`https://api.weirdgloop.org/exchange/history/osrs/last90d?id=${itemId}`);
-    const data2 = await resp2.json();
-    volume2 = data2[itemId.toString()];
-  } catch (e) {
-    volume2 = { error: "could not load volume history" };
-  }
-  let prevDaily;
-  let prevAverage;
-  const history = {
-    daily: Object.entries(data.daily).map((data2) => {
-      const entry = {
-        Date: new Date(parseInt(data2[0])),
-        Price: data2[1],
-        prev: prevDaily || data2[1]
-      };
-      prevDaily = data2[1];
-      return entry;
-    }),
-    average: Object.entries(data.average).map((data2) => {
-      const entry = {
-        date: new Date(parseInt(data2[0])),
-        price: data2[1],
-        prev: prevAverage || data2[1]
-      };
-      prevAverage = data2[1];
-      return entry;
-    }),
-    volume: volume2.map((data2) => ({
-      Date: new Date(data2.timestamp),
-      Volume: data2.volume
-    }))
-  };
-  console.log(history);
-  setPriceHistory(history);
-}
-var rises = null;
-async function loadRises(updateFunction) {
-  if (rises) {
-    updateFunction(rises);
-    return;
-  }
-  const mapped = await getBase();
-  const priceRises = mapped.sort((a2, b) => {
-    return b.priceChange - a2.priceChange;
-  });
-  rises = priceRises;
-  updateFunction(priceRises);
-}
-var falls = null;
-async function loadFalls(updateFunction) {
-  if (falls) {
-    updateFunction(falls);
-    return;
-  }
-  const mapped = await getBase();
-  const priceFalls = mapped.sort((a2, b) => {
-    return a2.priceChange - b.priceChange;
-  });
-  falls = priceFalls;
-  updateFunction(priceFalls);
-}
-var valuable = null;
-async function loadMostValuable(updateFunction) {
-  if (valuable) {
-    updateFunction(valuable);
-    return;
-  }
-  const mapped = await getBase();
-  const mostValuable = mapped.sort((a2, b) => {
-    return b.latestPrice - a2.latestPrice;
-  });
-  valuable = mostValuable;
-  updateFunction(mostValuable);
-}
-var volume = null;
-async function loadMostTraded(updateFunction) {
-  if (volume) {
-    updateFunction(volume);
-    return;
-  }
-  const mapped = await getBase();
-  const mostTraded = mapped.sort((a2, b) => {
-    return b.latestVolumeTraded - a2.latestVolumeTraded;
-  });
-  volume = mostTraded;
-  updateFunction(mostTraded);
-}
-var baseData = null;
-async function getBase() {
-  if (baseData != null) return baseData.slice();
-  try {
-    const resp = await fetch("https://prices.runescape.wiki/api/v1/osrs/latest");
-    const data = await resp.json();
-    const latestPrices = Object.entries(data.data);
-    const respA = await fetch("https://prices.runescape.wiki/api/v1/osrs/1h");
-    const dataA = await respA.json();
-    const latest1hrPrices = Object.entries(dataA.data);
-    const yesterdayTimestamp = dataA.timestamp - 86400;
-    const respB = await fetch(`https://prices.runescape.wiki/api/v1/osrs/1h?timestamp=${yesterdayTimestamp}`);
-    const dataB = await respB.json();
-    const yesterdayPrices = Object.entries(dataB.data);
-    const respC = await fetch("https://prices.runescape.wiki/api/v1/osrs/mapping");
-    const details = await respC.json();
-    console.group("API Calls");
-    console.log("All Items", details.length);
-    console.log("Latest", latestPrices.length);
-    console.log("Last Hour", latest1hrPrices.length);
-    console.log("Yesterday", yesterdayPrices.length);
-    console.groupEnd();
-    const items = details.reduce((coll, item) => {
-      const yesterdayArr = yesterdayPrices.find((price) => parseInt(price[0]) === item.id);
-      const yesterday = yesterdayArr ? yesterdayArr[1] : null;
-      const latest1hrArr = latest1hrPrices.find((price) => parseInt(price[0]) === item.id);
-      let latest;
-      if (latest1hrArr) latest = latest1hrArr[1];
-      else {
-        const latestArr = latestPrices.find((price) => parseInt(price[0]) === item.id);
-        if (!latestArr) return coll;
-        else {
-          const latestPrice2 = latestArr[1];
-          latest = {
-            avgHighPrice: latestPrice2.high,
-            highPriceVolume: yesterday ? yesterday.highPriceVolume : 0,
-            avgLowPrice: latestPrice2.low,
-            lowPriceVolume: yesterday ? yesterday.lowPriceVolume : 0
-          };
-        }
-      }
-      const latestPrice = (latest.avgHighPrice + latest.avgLowPrice) / 2;
-      const yesterdayPrice = yesterday ? (yesterday.avgHighPrice + yesterday.avgLowPrice) / 2 : null;
-      const priceChange = yesterday ? (latestPrice - yesterdayPrice) / yesterdayPrice * 100 : 0;
-      coll.push({
-        priceChange,
-        id: item.id,
-        name: item.name,
-        examine: item.examine,
-        members: item.members,
-        icon: item.icon.replaceAll(" ", "_"),
-        wikiLink: item.icon.replaceAll(" ", "_").slice(0, item.icon.length - 4),
-        highAlch: item.highalch,
-        buyLimit: item.limit,
-        latestPrice: Math.round(latestPrice),
-        yesterdayPrice: Math.round(yesterdayPrice),
-        latestVolumeTraded: latest.highPriceVolume + latest.lowPriceVolume
-      });
-      return coll;
-    }, []);
-    baseData = items;
-    return items;
-  } catch (e) {
-    console.error(e);
-    return { error: e };
-  }
-}
-
 // node_modules/d3-array/src/ascending.js
 function ascending(a2, b) {
   return a2 == null || b == null ? NaN : a2 < b ? -1 : a2 > b ? 1 : a2 >= b ? 0 : NaN;
@@ -39905,8 +39744,7 @@ function loadLineChart(priceHistoryImmutable, chartType, timespan, setLoading) {
   let plot2;
   if (chartType === "prices") {
     const daily = priceHistoryImmutable.daily.slice(priceHistoryImmutable.daily.length - priceItems);
-    const average = priceHistoryImmutable.average.slice(priceHistoryImmutable.average.length - priceItems);
-    plot2 = priceChart(daily, average);
+    plot2 = priceChart(daily);
   } else if (chartType === "volume") {
     const volume2 = priceHistoryImmutable.volume.slice(priceHistoryImmutable.volume.length - volumeItems);
     plot2 = volumeChart(volume2);
@@ -39915,7 +39753,7 @@ function loadLineChart(priceHistoryImmutable, chartType, timespan, setLoading) {
   root2.append(plot2);
   setLoading(false);
 }
-function priceChart(daily, average) {
+function priceChart(daily) {
   const { min: min4, max: max3 } = getMinMax(daily, "Price");
   const range3 = max3 - min4;
   const offset2 = range3 === 0 ? 1 : range3 / 20;
@@ -39959,7 +39797,8 @@ function priceChart(daily, average) {
         pointer({
           x: "Date",
           y: "Price",
-          fill: "#665b47"
+          fill: "#665b47",
+          fontSize: 14
         })
       )
     ]
@@ -39997,7 +39836,8 @@ function volumeChart(volume2) {
         pointerX({
           x: "Date",
           y: "Volume",
-          fill: "#665b47"
+          fill: "#665b47",
+          fontSize: 14
         })
       )
     ]
@@ -40011,6 +39851,13 @@ function getMinMax(array2, key) {
     if (el[key] > max3) max3 = el[key];
   }
   return { min: min4, max: max3 };
+}
+
+// API Calls/priceHistory.js
+async function loadPriceHistory(itemId, setPriceHistory) {
+  const resp = await fetch(`https://prices.runescape.wiki/api/v1/osrs/timeseries?timestep=24h&id=${itemId}`);
+  const data = await resp.json();
+  setPriceHistory(data.data);
 }
 
 // src/Components/Graph.jsx
@@ -40067,8 +39914,185 @@ function Item({ item }) {
       ${selectedItem === item ? "border-rs-text bg-rs-dark" : "border-t-rs-border-light border-l-rs-border-light border-b-stone-800 border-r-stone-800 bg-rs-medium rounded-sm"}`,
       onClick: () => setSelectedItem(item)
     },
-    /* @__PURE__ */ import_react7.default.createElement("div", { className: "flex flex-row items-center gap-2" }, /* @__PURE__ */ import_react7.default.createElement("div", { className: "flex-shrink-0 w-9 h-9" }, /* @__PURE__ */ import_react7.default.createElement("img", { src: `https://oldschool.runescape.wiki/images/${item.icon}`, alt: "", className: "no-blurry object-contain size-full" })), /* @__PURE__ */ import_react7.default.createElement("div", { className: "flex flex-col items-start" }, /* @__PURE__ */ import_react7.default.createElement("span", { className: "text-2xl text-start text-ellipsis whitespace-nowrap overflow-hidden w-[15rem]" }, item.name), /* @__PURE__ */ import_react7.default.createElement("div", { className: "flex flex-row text-lg gap-2" }, /* @__PURE__ */ import_react7.default.createElement("span", { className: formattedPrice.text }, formattedPrice.gp), item.priceChange >= 0 ? /* @__PURE__ */ import_react7.default.createElement("span", { className: "text-green-600" }, "+", item.priceChange.toFixed(2), "%") : /* @__PURE__ */ import_react7.default.createElement("span", { className: "text-red-600" }, item.priceChange.toFixed(2), "%"))))
+    /* @__PURE__ */ import_react7.default.createElement("div", { className: "flex flex-row items-center gap-2" }, /* @__PURE__ */ import_react7.default.createElement("div", { className: "flex-shrink-0 w-9 h-9" }, /* @__PURE__ */ import_react7.default.createElement("img", { src: `https://oldschool.runescape.wiki/images/${item.icon}`, alt: "", className: "no-blurry object-contain size-full" })), /* @__PURE__ */ import_react7.default.createElement("div", { className: "flex flex-col items-start" }, /* @__PURE__ */ import_react7.default.createElement("span", { className: "text-2xl text-start text-ellipsis whitespace-nowrap overflow-hidden w-[15rem]" }, item.name, " ", item.id, " ", item.lowQualityData && "poop"), /* @__PURE__ */ import_react7.default.createElement("div", { className: "flex flex-row text-lg gap-2" }, /* @__PURE__ */ import_react7.default.createElement("span", { className: formattedPrice.text }, formattedPrice.gp), item.priceChange >= 0 ? /* @__PURE__ */ import_react7.default.createElement("span", { className: "text-green-600" }, "+", item.priceChange.toFixed(2), "%") : /* @__PURE__ */ import_react7.default.createElement("span", { className: "text-red-600" }, item.priceChange.toFixed(2), "%"))))
   );
+}
+
+// API Calls/fetchItems.js
+var baseData = null;
+async function getBase() {
+  if (baseData != null) return baseData.slice();
+  try {
+    const respItems = await fetch("https://prices.runescape.wiki/api/v1/osrs/mapping");
+    const itemDetails = await respItems.json();
+    itemDetails.sort((a2, b) => a2.id - b.id);
+    const respLastRecordedPrices = await fetch("https://prices.runescape.wiki/api/v1/osrs/latest");
+    const jsonLastRecordedPrices = await respLastRecordedPrices.json();
+    const recordedPrices = Object.entries(jsonLastRecordedPrices.data);
+    const timestampDayOffset = 86400;
+    const maxFetches = 7;
+    let dailyPrices = [];
+    let lastTimestamp = null;
+    for (let i = 0; i < maxFetches; i++) {
+      const data = await fetch24HourPrices(lastTimestamp);
+      dailyPrices.push(data.prices);
+      lastTimestamp = data.timestamp - timestampDayOffset;
+    }
+    let items = [];
+    for (const item of itemDetails) {
+      const entryInRecordedPrices = recordedPrices.find((price) => parseInt(price[0]) === item.id);
+      if (!entryInRecordedPrices) {
+        continue;
+      }
+      let currentPriceData = null;
+      let previousPriceData = null;
+      let currentFoundAtIndex;
+      let lowQualityData = false;
+      for (let i = 0; i < dailyPrices.length; i++) {
+        const match = dailyPrices[i].find((price) => parseInt(price[0]) === item.id);
+        if (match) {
+          if (Object.values(match).some((val) => val == null)) continue;
+          currentFoundAtIndex = i;
+          currentPriceData = match[1];
+          break;
+        }
+      }
+      if (currentPriceData != null) {
+        for (let i = currentFoundAtIndex + 1; i < dailyPrices.length; i++) {
+          const match = dailyPrices[i].find((price) => parseInt(price[0]) === item.id);
+          if (match) {
+            if (Object.values(match).some((val) => val == null)) continue;
+            previousPriceData = match[1];
+            break;
+          }
+        }
+      }
+      if (!currentPriceData || !previousPriceData) {
+        lowQualityData = true;
+        const { current, previous } = await fetchItemCurrentAndPrevious(item.id);
+        if (!current || !previous) {
+          console.error("could not find a current and previous for", item.name);
+          continue;
+        }
+        currentPriceData = current;
+        previousPriceData = previous;
+      }
+      const currentPrice = (currentPriceData.avgHighPrice + currentPriceData.avgLowPrice) / 2;
+      const previousPrice = (previousPriceData.avgHighPrice + previousPriceData.avgLowPrice) / 2;
+      const priceChange = (currentPrice - previousPrice) / previousPrice * 100;
+      items.push({
+        priceChange,
+        id: item.id,
+        name: item.name,
+        examine: item.examine,
+        members: item.members,
+        icon: item.icon.replaceAll(" ", "_"),
+        wikiLink: item.icon.replaceAll(" ", "_").slice(0, item.icon.length - 4),
+        highAlch: item.highalch,
+        buyLimit: item.limit,
+        lowQualityData,
+        latestPrice: Math.round(currentPrice),
+        yesterdayPrice: Math.round(previousPrice),
+        latestVolumeTraded: currentPriceData.highPriceVolume + currentPriceData.lowPriceVolume,
+        previousVolumeTraded: previousPriceData.highPriceVolume + previousPriceData.lowPriceVolume
+      });
+    }
+    baseData = items;
+    return baseData.slice();
+  } catch (e) {
+    console.error(e);
+    return { error: e };
+  }
+}
+async function fetch24HourPrices(timestamp) {
+  const resp = await fetch(`https://prices.runescape.wiki/api/v1/osrs/24h${timestamp ? `?timestamp=${timestamp}` : ""}`);
+  const data = await resp.json();
+  const prices = Object.entries(data.data);
+  prices.sort((a2, b) => a2[0] - b[0]);
+  return {
+    prices,
+    timestamp: data.timestamp
+  };
+}
+async function fetchItemCurrentAndPrevious(itemId) {
+  const resp = await fetch(`https://prices.runescape.wiki/api/v1/osrs/timeseries?timestep=24h&id=${itemId}`);
+  const data = await resp.json();
+  const priceHistory = data.data;
+  let latestPriceData;
+  let previousPriceData;
+  let latestFoundAtIndex;
+  for (let i = priceHistory.length - 1; i >= 0; i--) {
+    if (Object.values(priceHistory[i]).every((val) => val != null)) {
+      latestPriceData = priceHistory[i];
+      latestFoundAtIndex = i;
+      break;
+    }
+  }
+  for (let i = latestFoundAtIndex - 1; i >= 0; i--) {
+    if (Object.values(priceHistory[i]).every((val) => val != null)) {
+      previousPriceData = priceHistory[i];
+      break;
+    }
+  }
+  return {
+    current: latestPriceData,
+    previous: previousPriceData
+  };
+}
+
+// API Calls/getCategories.js
+var minimumVolume = 10;
+var rises = null;
+async function loadRises(updateFunction) {
+  if (rises) {
+    updateFunction(rises);
+    return;
+  }
+  const mapped = await getBase();
+  const priceRises = mapped.filter((item) => item.latestVolumeTraded > minimumVolume && item.previousVolumeTraded > minimumVolume).sort((a2, b) => {
+    return b.priceChange - a2.priceChange;
+  });
+  rises = priceRises;
+  updateFunction(priceRises);
+}
+var falls = null;
+async function loadFalls(updateFunction) {
+  if (falls) {
+    updateFunction(falls);
+    return;
+  }
+  const mapped = await getBase();
+  const priceFalls = mapped.filter((item) => item.latestVolumeTraded > minimumVolume && item.previousVolumeTraded > minimumVolume).sort((a2, b) => {
+    return a2.priceChange - b.priceChange;
+  });
+  falls = priceFalls;
+  updateFunction(priceFalls);
+}
+var valuable = null;
+async function loadMostValuable(updateFunction) {
+  if (valuable) {
+    updateFunction(valuable);
+    return;
+  }
+  const mapped = await getBase();
+  const mostValuable = mapped.sort((a2, b) => {
+    return b.latestPrice - a2.latestPrice;
+  });
+  valuable = mostValuable;
+  updateFunction(mostValuable);
+}
+var volume = null;
+async function loadMostTraded(updateFunction) {
+  if (volume) {
+    updateFunction(volume);
+    return;
+  }
+  const mapped = await getBase();
+  const mostTraded = mapped.sort((a2, b) => {
+    return b.latestVolumeTraded - a2.latestVolumeTraded;
+  });
+  volume = mostTraded;
+  updateFunction(mostTraded);
 }
 
 // src/StockApp.jsx

@@ -28,7 +28,7 @@ function Item({ item }) {
         </div>
         <div className="flex flex-col items-start">
           <span className="text-2xl text-start text-ellipsis whitespace-nowrap overflow-hidden w-[15rem]">
-            {item.name}
+            {item.name} {item.id} {item.lowQualityData && 'poop'}
           </span>
           <div className="flex flex-row text-lg gap-2">
             <span className={formattedPrice.text}>{formattedPrice.gp}</span>

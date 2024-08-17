@@ -25,8 +25,7 @@ export default function loadLineChart(priceHistoryImmutable, chartType, timespan
   let plot;
   if (chartType === 'prices') {
     const daily = priceHistoryImmutable.daily.slice(priceHistoryImmutable.daily.length - priceItems);
-    const average = priceHistoryImmutable.average.slice(priceHistoryImmutable.average.length - priceItems);
-    plot = priceChart(daily, average);
+    plot = priceChart(daily);
   } else if (chartType === 'volume') {
     const volume = priceHistoryImmutable.volume.slice(priceHistoryImmutable.volume.length - volumeItems);
     plot = volumeChart(volume);
@@ -38,7 +37,7 @@ export default function loadLineChart(priceHistoryImmutable, chartType, timespan
   setLoading(false)
 }
 
-function priceChart(daily, average) {
+function priceChart(daily) {
   const {min, max} = getMinMax(daily, 'Price');
   const range = max - min;
   const offset = range === 0 ? 1 : range / 20;
@@ -84,7 +83,8 @@ function priceChart(daily, average) {
         Plot.pointer({
           x: 'Date',
           y: 'Price',
-          fill: '#665b47'
+          fill: '#665b47',
+          fontSize: 14
         })
       ),
     ],
@@ -122,7 +122,8 @@ function volumeChart(volume) {
         Plot.pointerX({
           x: 'Date',
           y: 'Volume',
-          fill: '#665b47'
+          fill: '#665b47',
+          fontSize: 14
         })
       )
     ]

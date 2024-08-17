@@ -4,7 +4,7 @@ import Categories from "./Components/Categories";
 import ItemInfo from "./Components/ItemInfo";
 import ItemList from "./Components/ItemList";
 import LoadingSpinner from "./Components/LoadingSpinner";
-import { loadFalls, loadMostTraded, loadMostValuable, loadRises } from "./apiCalls";
+import { loadFalls, loadMostTraded, loadMostValuable, loadRises } from "../API Calls/getCategories";
 
 
 // let catgegories = 'rises' || 'falls' || 'most-valuable' || 'most-traded' || 'my-list';
