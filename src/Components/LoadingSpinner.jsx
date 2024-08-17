@@ -1,6 +1,10 @@
 import React from "react";
 
-export default function LoadingSpinner({ style = 'runes'}) {
+export default function LoadingSpinner({ style = 'runes', randomize = false}) {
+  if (randomize) {
+    if (Math.random() > 0.5) style = 'runes';
+    else style = 'partyhats';
+  }
   let item1;
   let item2;
   let item3;

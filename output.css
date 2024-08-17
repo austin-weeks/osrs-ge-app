@@ -908,6 +908,10 @@ video {
   text-align: start;
 }
 
+.font-sans {
+  font-family: Runescape;
+}
+
 .text-2xl {
   font-size: 1.5rem;
   line-height: 2rem;
@@ -1012,6 +1016,10 @@ html {
   text-shadow: 0.2rem 0.2rem black;
 }
 
+.text-rs-shadow-small {
+  text-shadow: 0.1rem 0.1rem black;
+}
+
 .rs-border {
   border-width: 2px;
   border-top-color: var(--rs-border-light);
@@ -1043,13 +1051,13 @@ html {
   }
 
   to {
-    transform: translateX(-450%);
+    transform: translateX(-400%);
   }
 }
 
 @keyframes scrolling-text-right {
   from {
-    transform: translateX(-450%);
+    transform: translateX(-400%);
   }
 
   to {

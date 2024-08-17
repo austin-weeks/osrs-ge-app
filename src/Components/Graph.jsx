@@ -3,7 +3,7 @@ import { appContext } from "../StockApp";
 import Button from "./Button";
 import LoadingSpinner from "./LoadingSpinner";
 import { loadPriceHistory } from "../apiCalls";
-import loadLineChart from "./priceChart";
+import loadLineChart from "./plotCharts";
 
 export default function Graph() {
   const { selectedItem } = useContext(appContext);
@@ -60,10 +60,10 @@ export default function Graph() {
 
       {loading && (
         <div className="size-full flex justify-center items-center">
-          <LoadingSpinner style="partyhats" />
+          <LoadingSpinner randomize />
         </div>
       )}
-      <div className={`size-full relative ${loading && 'hidden'}`} id="graph-root" />
+      <div className={`size-full relative text-rs-shadow-small font-sans ${loading && 'hidden'}`} id="graph-root" />
     </div>
   );
 }

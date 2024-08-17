@@ -22,3 +22,33 @@ export function formatGP(gp) {
     }
   }
 }
+
+export function formatPrice(price) {
+  const mil = 10000000;
+  const k = 100000;
+  if (price >= mil) {
+    const money = Math.floor(price / 1000000);
+    return `${money}M`;
+  } else if (price >= k) {
+    const money = Math.floor(price / 1000);
+    return `${money}K`;
+  }
+  else {
+    return `${price}`;
+  }
+}
+
+export function formatVolume(volume) {
+  const mil = 10000000;
+  const k = 100000;
+  if (volume >= mil) {
+    const vol = Math.floor(volume / 1000000);
+    return `${vol}M`;
+  } else if (volume >= k) {
+    const vol = Math.floor(volume / 1000);
+    return `${vol}K`;
+  }
+  else {
+    return `${volume}`;
+  }
+}

@@ -1,4 +1,5 @@
 import * as Plot from "@observablehq/plot";
+import { formatPrice, formatVolume } from "./formatters";
 
 export default function loadLineChart(priceHistoryImmutable, chartType, timespan,  setLoading) {
   const root = document.getElementById('graph-root');
@@ -40,27 +41,37 @@ export default function loadLineChart(priceHistoryImmutable, chartType, timespan
 function priceChart(daily, average) {
   const {min, max} = getMinMax(daily, 'Price');
   const range = max - min;
-  const offset = range === 0 ? 1 : Math.round(range / 20);
+  const offset = range === 0 ? 1 : range / 20;
 
   return Plot.plot({
+    marginLeft: 50,
     grid: true,
+    style: {
+      fontFamily: 'inherit',
+      fontSize: 12
+    },
     x: {
-      tickSpacing: 30
+      tickSpacing: 30,
     },
     y: {
-
+      labelOffset: 35,
+      tickFormat: d => d > Math.floor(d) ? '' : formatPrice(d)
     },
     marks: [
       Plot.ruleY([min - offset]),
-      
-      Plot.lineY(daily, {
-        x: 'Date',
-        y: 'Price',
-        stroke: '#292524',
-        opacity: 0.8,
-        curve: 'bundle',
-        tension: 0.3
+      Plot.ruleX([daily[0].Date], {
+        opacity: 0.7
       }),
+      
+      Plot.lineY(daily, 
+        Plot.windowY(7, {
+          x: 'Date',
+          y: 'Price',
+          stroke: '#292524',
+          opacity: 0.8,
+          curve: 'basis'
+        })
+      ),
       
       Plot.lineY(daily, {
         x: 'Date',
@@ -80,22 +91,26 @@ function priceChart(daily, average) {
   });
 }
 function volumeChart(volume) {
-  const { min, max } = getMinMax(volume, 'Price');
-  const range = max - min;
-  const offset = range === 0 ? 1 : Math.round(range / 20);
 
   return Plot.plot({
     grid: true,
+    style: {
+      fontFamily: 'inherit',
+      fontSize: 12
+    },
     x: {
       interval: 'day',
       tickSpacing: 30
     },
     y: {
-
+      tickFormat: d => formatVolume(d)
     },
-    color: { domain: [-1, 0, 1], range: ["#e41a1c", "currentColor", "#4daf4a"] },
     marks: [
       Plot.ruleY([0]),
+      Plot.ruleX([volume[0].Date], {
+        dx: -(volume.length > 30 ? 4 : 11),
+        opacity: 0.7
+      }),
       Plot.rectY(volume, {
         x: 'Date',
         y: 'Volume',
