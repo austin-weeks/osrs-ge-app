@@ -14,6 +14,7 @@ export default function Graph() {
       setPriceHistory(null);
       return;
     }
+    setDisabledTimespans([]);
     setLoading(true);
     loadPriceHistory(selectedItem.id, (data) => {
       setPriceHistory(data);
@@ -21,17 +22,34 @@ export default function Graph() {
   }, [selectedItem]);
 
   const [activeGraph, setActiveGraph] = useState('prices');
-  const [timespan, setTimespan] = useState('1month');
+  const [timespan, setTimespan] = useState('3months');
+  const [disabledTimespans, setDisabledTimespans] = useState([]);
   function changeGraph(graph) {
-    if (graph === 'volume' && timespan === '6months')
-      setTimespan('3months');
+    // if (graph === 'volume' && timespan === '6months')
+    //   setTimespan('3months');
     setActiveGraph(graph);
   }
 
   useEffect(() => {
     if (priceHistory == null) return;
     setLoading(true);
-    loadLineChart(priceHistory, activeGraph, timespan, setLoading)
+    // setDisabledTimespans([]);
+    loadLineChart(priceHistory, activeGraph, timespan, setLoading, () => {
+      switch (timespan) {
+        case '1month':
+          setDisabledTimespans(['1month']);
+          setTimespan('3months');
+          break;
+        case '3months':
+          setDisabledTimespans(['1month', '3months']);
+          setTimespan('6months');
+          break;
+        case '6months':
+          setDisabledTimespans(['1month', '3months', '6months']);
+          setTimespan('1year');
+        break;
+      }
+    })
   }, [priceHistory, activeGraph, timespan]);
 
   return (
@@ -47,14 +65,17 @@ export default function Graph() {
       </div>
       <div className="flex flex-row gap-1 items-center">
         <img src="https://oldschool.runescape.wiki/images/Speedrunning_shop_icon.png?b6c2f" className="flex-shrink-0 object-contain h-6 no-blurry" />
-        <Button onClick={() => setTimespan('1month')} active={timespan === '1month'} small>
+        <Button onClick={() => setTimespan('1month')} active={timespan === '1month'} small disabled={disabledTimespans.includes('1month')}>
           1 Month
         </Button>
-        <Button onClick={() => setTimespan('3months')} active={timespan === '3months'} small>
+        <Button onClick={() => setTimespan('3months')} active={timespan === '3months'} small disabled={disabledTimespans.includes('3months')}>
           3 Months
         </Button>
-        <Button onClick={() => setTimespan('6months')} active={timespan === '6months'} small disabled={activeGraph === 'volume'}>
+        <Button onClick={() => setTimespan('6months')} active={timespan === '6months'} small disabled={disabledTimespans.includes('6months')}>
           6 Months
+        </Button>
+        <Button onClick={() => setTimespan('1year')} active={timespan === '1year'} small disabled={disabledTimespans.includes('1year')}>
+          1 Year
         </Button>
       </div>
 

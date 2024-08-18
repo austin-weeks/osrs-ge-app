@@ -23570,6 +23570,10 @@ function Categories() {
 var import_react6 = __toESM(require_react());
 
 // src/Components/formatters.js
+function formatDate(date2) {
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  return `${months[date2.getUTCMonth()]} ${date2.getUTCDate()} ${date2.getUTCFullYear()}`;
+}
 function formatGP(gp) {
   const mil = 1e7;
   const k2 = 1e5;
@@ -39720,83 +39724,125 @@ Mark.prototype.plot = function({ marks: marks2 = [], ...options } = {}) {
 };
 
 // src/Components/plotCharts.jsx
-function loadLineChart(priceHistoryImmutable, chartType, timespan, setLoading) {
+function loadLineChart(priceHistoryImmutable, chartType, timespan, setLoading, increaseTimeSpan) {
   const root2 = document.getElementById("graph-root");
   while (root2.firstElementChild) {
     root2.removeChild(root2.lastElementChild);
   }
-  let priceItems = 0;
-  let volumeItems = 0;
+  const nowTimestamp = Date.now();
+  const month = 2629743e3;
+  const year = 31556926e3;
+  let rewindedTimestamp;
   switch (timespan) {
     default:
     case "1month":
-      priceItems = 30;
-      volumeItems = 30;
+      rewindedTimestamp = nowTimestamp - month;
       break;
     case "3months":
-      priceItems = 90;
-      volumeItems = priceHistoryImmutable.volume.length;
+      rewindedTimestamp = nowTimestamp - month * 3;
       break;
     case "6months":
-      priceItems = priceHistoryImmutable.daily.length;
+      rewindedTimestamp = nowTimestamp - month * 6;
       break;
+    case "1year":
+      rewindedTimestamp = nowTimestamp - year;
+      break;
+  }
+  const startingDate = new Date(rewindedTimestamp);
+  const priceHistoryDateRange = priceHistoryImmutable.slice().filter((entry) => entry.Date > rewindedTimestamp);
+  if (priceHistoryDateRange.length === 0 && timespan !== "1year") {
+    increaseTimeSpan();
+    return;
   }
   let plot2;
   if (chartType === "prices") {
-    const daily = priceHistoryImmutable.daily.slice(priceHistoryImmutable.daily.length - priceItems);
-    plot2 = priceChart(daily);
+    plot2 = priceChart(priceHistoryDateRange, startingDate);
   } else if (chartType === "volume") {
-    const volume2 = priceHistoryImmutable.volume.slice(priceHistoryImmutable.volume.length - volumeItems);
-    plot2 = volumeChart(volume2);
+    plot2 = volumeChart(priceHistoryDateRange, startingDate, timespan);
   }
   plot2.classList.add("absolute", "inset-0", "size-full");
   root2.append(plot2);
   setLoading(false);
 }
-function priceChart(daily) {
-  const { min: min4, max: max3 } = getMinMax(daily, "Price");
-  const range3 = max3 - min4;
+function priceChart(priceHistory, startDate) {
+  if (priceHistory.length === 0) {
+    const div = document.createElement("div");
+    div.className = "flex items-center justify-center text-center";
+    div.textContent = "This item has no recorded purchases within the selected timespan :(";
+    return div;
+  }
+  const min4 = getMin(priceHistory, "Low");
+  const max3 = getMax(priceHistory, "High");
+  const range3 = Math.abs(max3 - min4);
   const offset2 = range3 === 0 ? 1 : range3 / 20;
   return plot({
     marginLeft: 50,
     grid: true,
+    color: {
+      domain: [-1, 0, 1],
+      range: ["#e41a1c", "#333333", "#4daf4a"]
+    },
     style: {
       fontFamily: "inherit",
       fontSize: 12
     },
     x: {
+      interval: "day",
       tickSpacing: 30
     },
     y: {
-      labelOffset: 35,
+      label: "Price (gp)",
+      labelArrow: false,
+      labelOffset: 33,
       tickFormat: (d) => d > Math.floor(d) ? "" : formatPrice(d)
     },
     marks: [
-      ruleY([min4 - offset2]),
-      ruleX([daily[0].Date], {
+      //Have to check if max is less than min becuase theres weird date with items like pure essence
+      ruleY([(max3 > min4 ? min4 : max3) - offset2]),
+      ruleY([range3 < 2 ? max3 + 1 : max3], {
+        opacity: 0
+      }),
+      ruleX([startDate], {
         opacity: 0.7
       }),
+      ruleX([Date.now()], {
+        opacity: 0
+      }),
+      //Moving average curve
       lineY(
-        daily,
+        priceHistory,
         windowY(7, {
           x: "Date",
-          y: "Price",
+          y: "averagePrice",
           stroke: "#292524",
           opacity: 0.8,
           curve: "basis"
         })
       ),
-      lineY(daily, {
+      //Candlestick price moves line
+      ruleX(priceHistory, {
         x: "Date",
-        y: "Price",
-        opacity: 1,
+        y1: (d) => d.Low ? d.Low : d.averagePrice,
+        y2: (d) => d.High ? d.High : d.averagePrice,
+        stroke: (d) => Math.sign(d.averagePrice - d.previousPrice),
+        strokeWidth: 2,
         marker: "dot"
       }),
+      // Plot.lineY(priceHistory, {
+      //   x: 'Date',
+      //   y: 'Price',
+      //   opacity: 1,
+      //   marker: 'dot'
+      // }),
       tip(
-        daily,
+        priceHistory,
         pointer({
           x: "Date",
-          y: "Price",
+          y1: (d) => d.Low ? d.Low : d.averagePrice,
+          y2: (d) => d.High ? d.High : d.averagePrice,
+          title: (d) => `Date  ${formatDate(d.Date)}
+${d.High && d.Low ? `High  ${formatPrice(d.High)}
+Low   ${formatPrice(d.Low)}` : `Price  ${formatPrice(d.averagePrice)}`}`,
           fill: "#665b47",
           fontSize: 14
         })
@@ -39804,7 +39850,29 @@ function priceChart(daily) {
     ]
   });
 }
-function volumeChart(volume2) {
+function volumeChart(priceHistory, startDate, timepsan) {
+  if (priceHistory.length === 0) {
+    const div = document.createElement("div");
+    div.className = "flex items-center justify-center text-center";
+    div.textContent = "This item has no recorded purchases within the selected timespan :(";
+    return div;
+  }
+  let labelOffset;
+  switch (timepsan) {
+    default:
+    case "1month":
+      labelOffset = 11;
+      break;
+    case "3months":
+      labelOffset = 13;
+      break;
+    case "6months":
+      labelOffset = 15;
+      break;
+    case "1year":
+      labelOffset = 1;
+      break;
+  }
   return plot({
     grid: true,
     style: {
@@ -39816,48 +39884,91 @@ function volumeChart(volume2) {
       tickSpacing: 30
     },
     y: {
+      label: "# Traded",
+      labelArrow: false,
+      labelOffset: 30,
       tickFormat: (d) => formatVolume(d)
     },
     marks: [
       ruleY([0]),
-      ruleX([volume2[0].Date], {
-        dx: -(volume2.length > 30 ? 4 : 11),
+      ruleX([startDate], {
+        dx: -labelOffset,
         opacity: 0.7
       }),
-      rectY(volume2, {
+      ruleX([Date.now()], {
+        opacity: 0
+      }),
+      //Low Price Volume
+      rectY(priceHistory, {
         x: "Date",
-        y: "Volume"
-        // stroke: (d) => Math.sign(d.prev - d.price),
-        // strokeWidth: 4,
-        // strokeLinecap: "round",
+        y1: 0,
+        y2: "Low Price Volume",
+        fill: "#d97706"
+      }),
+      //High Price Volume
+      rectY(priceHistory, {
+        x: "Date",
+        y1: "Low Price Volume",
+        y2: "High Price Volume",
+        fill: "#0ea5e9"
       }),
       tip(
-        volume2,
+        priceHistory,
         pointerX({
           x: "Date",
-          y: "Volume",
+          y: "High Price Volume",
           fill: "#665b47",
-          fontSize: 14
+          fontSize: 14,
+          title: (d) => (
+            //Weird string literal to get the spacing correct
+            `Date${d["High Price Volume"] > 1e3 || d["Low Price Volume"] > 1e3 ? "              " : "          "}${formatDate(d.Date)}
+High Price Volume  ${formatVolume(d["High Price Volume"])}
+Low Price Volume   ${formatVolume(d["Low Price Volume"])}`
+          )
         })
       )
     ]
   });
 }
-function getMinMax(array2, key) {
+function getMin(array2, key) {
   let min4 = Infinity;
-  let max3 = -Infinity;
   for (const el of array2) {
     if (el[key] < min4) min4 = el[key];
+  }
+  return min4;
+}
+function getMax(array2, key) {
+  let max3 = -Infinity;
+  for (const el of array2) {
     if (el[key] > max3) max3 = el[key];
   }
-  return { min: min4, max: max3 };
+  return max3;
 }
 
 // API Calls/priceHistory.js
 async function loadPriceHistory(itemId, setPriceHistory) {
-  const resp = await fetch(`https://prices.runescape.wiki/api/v1/osrs/timeseries?timestep=24h&id=${itemId}`);
-  const data = await resp.json();
-  setPriceHistory(data.data);
+  try {
+    const resp = await fetch(`https://prices.runescape.wiki/api/v1/osrs/timeseries?timestep=24h&id=${itemId}`);
+    const data = await resp.json();
+    let previousEntry = null;
+    const history = data.data.map((entry) => {
+      const item = {
+        Date: new Date(entry.timestamp * 1e3),
+        High: entry.avgHighPrice,
+        Low: entry.avgLowPrice,
+        averagePrice: (entry.avgHighPrice + entry.avgLowPrice) / 2,
+        previousPrice: previousEntry ? (previousEntry.avgHighPrice + previousEntry.avgLowPrice) / 2 : (entry.avgHighPrice + entry.avgLowPrice) / 2,
+        "High Price Volume": entry.highPriceVolume,
+        "Low Price Volume": entry.lowPriceVolume
+      };
+      previousEntry = entry;
+      return item;
+    });
+    setPriceHistory(history);
+  } catch (e) {
+    console.log(e);
+    return { error: "could not fetch price history" };
+  }
 }
 
 // src/Components/Graph.jsx
@@ -39870,24 +39981,39 @@ function Graph() {
       setPriceHistory(null);
       return;
     }
+    setDisabledTimespans([]);
     setLoading(true);
     loadPriceHistory(selectedItem.id, (data) => {
       setPriceHistory(data);
     });
   }, [selectedItem]);
   const [activeGraph, setActiveGraph] = (0, import_react5.useState)("prices");
-  const [timespan, setTimespan] = (0, import_react5.useState)("1month");
+  const [timespan, setTimespan] = (0, import_react5.useState)("3months");
+  const [disabledTimespans, setDisabledTimespans] = (0, import_react5.useState)([]);
   function changeGraph(graph) {
-    if (graph === "volume" && timespan === "6months")
-      setTimespan("3months");
     setActiveGraph(graph);
   }
   (0, import_react5.useEffect)(() => {
     if (priceHistory == null) return;
     setLoading(true);
-    loadLineChart(priceHistory, activeGraph, timespan, setLoading);
+    loadLineChart(priceHistory, activeGraph, timespan, setLoading, () => {
+      switch (timespan) {
+        case "1month":
+          setDisabledTimespans(["1month"]);
+          setTimespan("3months");
+          break;
+        case "3months":
+          setDisabledTimespans(["1month", "3months"]);
+          setTimespan("6months");
+          break;
+        case "6months":
+          setDisabledTimespans(["1month", "3months", "6months"]);
+          setTimespan("1year");
+          break;
+      }
+    });
   }, [priceHistory, activeGraph, timespan]);
-  return /* @__PURE__ */ import_react5.default.createElement("div", { className: "border-2 border-border size-full gap-1 flex flex-col" }, /* @__PURE__ */ import_react5.default.createElement("div", { className: "flex flex-row gap-1 items-center" }, /* @__PURE__ */ import_react5.default.createElement("img", { src: "https://oldschool.runescape.wiki/images/Grand_Exchange_icon.png?16321", className: "flex-shrink-0 object-contain h-6 no-blurry" }), /* @__PURE__ */ import_react5.default.createElement(Button, { onClick: () => changeGraph("prices"), active: activeGraph === "prices", small: true }, "Price Changes"), /* @__PURE__ */ import_react5.default.createElement(Button, { onClick: () => changeGraph("volume"), active: activeGraph === "volume", small: true }, "Volume Traded")), /* @__PURE__ */ import_react5.default.createElement("div", { className: "flex flex-row gap-1 items-center" }, /* @__PURE__ */ import_react5.default.createElement("img", { src: "https://oldschool.runescape.wiki/images/Speedrunning_shop_icon.png?b6c2f", className: "flex-shrink-0 object-contain h-6 no-blurry" }), /* @__PURE__ */ import_react5.default.createElement(Button, { onClick: () => setTimespan("1month"), active: timespan === "1month", small: true }, "1 Month"), /* @__PURE__ */ import_react5.default.createElement(Button, { onClick: () => setTimespan("3months"), active: timespan === "3months", small: true }, "3 Months"), /* @__PURE__ */ import_react5.default.createElement(Button, { onClick: () => setTimespan("6months"), active: timespan === "6months", small: true, disabled: activeGraph === "volume" }, "6 Months")), loading && /* @__PURE__ */ import_react5.default.createElement("div", { className: "size-full flex justify-center items-center" }, /* @__PURE__ */ import_react5.default.createElement(LoadingSpinner, { randomize: true })), /* @__PURE__ */ import_react5.default.createElement("div", { className: `size-full relative text-rs-shadow-small font-sans ${loading && "hidden"}`, id: "graph-root" }));
+  return /* @__PURE__ */ import_react5.default.createElement("div", { className: "border-2 border-border size-full gap-1 flex flex-col" }, /* @__PURE__ */ import_react5.default.createElement("div", { className: "flex flex-row gap-1 items-center" }, /* @__PURE__ */ import_react5.default.createElement("img", { src: "https://oldschool.runescape.wiki/images/Grand_Exchange_icon.png?16321", className: "flex-shrink-0 object-contain h-6 no-blurry" }), /* @__PURE__ */ import_react5.default.createElement(Button, { onClick: () => changeGraph("prices"), active: activeGraph === "prices", small: true }, "Price Changes"), /* @__PURE__ */ import_react5.default.createElement(Button, { onClick: () => changeGraph("volume"), active: activeGraph === "volume", small: true }, "Volume Traded")), /* @__PURE__ */ import_react5.default.createElement("div", { className: "flex flex-row gap-1 items-center" }, /* @__PURE__ */ import_react5.default.createElement("img", { src: "https://oldschool.runescape.wiki/images/Speedrunning_shop_icon.png?b6c2f", className: "flex-shrink-0 object-contain h-6 no-blurry" }), /* @__PURE__ */ import_react5.default.createElement(Button, { onClick: () => setTimespan("1month"), active: timespan === "1month", small: true, disabled: disabledTimespans.includes("1month") }, "1 Month"), /* @__PURE__ */ import_react5.default.createElement(Button, { onClick: () => setTimespan("3months"), active: timespan === "3months", small: true, disabled: disabledTimespans.includes("3months") }, "3 Months"), /* @__PURE__ */ import_react5.default.createElement(Button, { onClick: () => setTimespan("6months"), active: timespan === "6months", small: true, disabled: disabledTimespans.includes("6months") }, "6 Months"), /* @__PURE__ */ import_react5.default.createElement(Button, { onClick: () => setTimespan("1year"), active: timespan === "1year", small: true, disabled: disabledTimespans.includes("1year") }, "1 Year")), loading && /* @__PURE__ */ import_react5.default.createElement("div", { className: "size-full flex justify-center items-center" }, /* @__PURE__ */ import_react5.default.createElement(LoadingSpinner, { randomize: true })), /* @__PURE__ */ import_react5.default.createElement("div", { className: `size-full relative text-rs-shadow-small font-sans ${loading && "hidden"}`, id: "graph-root" }));
 }
 
 // src/Components/ItemInfo.jsx
