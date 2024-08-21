@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+.overflow-auto {
+  
+}
+
 * {
   -webkit-user-drag: none;
   -khtml-user-drag: none;
@@ -15,8 +19,8 @@
   --rs-light: #574e3d;
   --rs-medium: #544b39;
   --rs-dark: #483f2c;
-  --rs-border-light-active: #facc15;
-  --rs-border-dark-active: #b59411;
+  --rs-border-light-active: #1f1f1f;
+  --rs-border-dark-active: #333333;
   --rs-border-light: #9c8862;
   --rs-border-dark: #2d281e;
   --rs-text-yellow: #ffff00;
@@ -28,7 +32,7 @@
     font-style: normal;
     font-weight: 400;
     font-display: swap;
-    src: url(../assets/runescape.ttf);
+    src: url(/assets/runescape.ttf);
   }
 }
 
@@ -64,14 +68,14 @@ html {
 }
 
 .animate-scroll-text-left {
-  animation: scrolling-text-left 60s linear infinite;
+  animation: scrolling-text-left 75s linear infinite;
 }
 .animate-scroll-text-right {
-  animation: scrolling-text-right 60s linear infinite;
+  animation: scrolling-text-right 75s linear infinite;
 }
 .animate-scroll-text-vertical {
   writing-mode: vertical-lr;
-  animation: scrolling-text-vertical 60s linear infinite;
+  animation: scrolling-text-vertical 75s linear infinite;
 }
 .pause-hover:hover {
   animation-play-state: paused;
@@ -81,22 +85,22 @@ html {
     transform: translateX(-50%);
   }
   to {
-    transform: translateX(-400%);
+    transform: translateX(-450%);
   }
 }
 @keyframes scrolling-text-right {
   from {
-    transform: translateX(-400%);
+    transform: translateX(-450%);
   }
   to {
-    transform: translateX(50%);
+    transform: translateX(-50%);
   }
 }
 @keyframes scrolling-text-vertical {
   from {
-    transform: translateY(-50%);
+    transform: translateY(-450%);
   }
   to {
-    transform: translateY(-450%);
+    transform: translateY(-50%);
   }
 }

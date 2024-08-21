@@ -10,7 +10,7 @@ export async function loadRises(updateFunction) {
   }
   const mapped = await getBase();
   const priceRises = mapped
-    .filter(item => item.latestVolumeTraded > minimumVolume && item.previousVolumeTraded > minimumVolume)
+    .filter(item => !item.utilizedTimeSeriesSearch && item.latestVolumeTraded > minimumVolume && item.previousVolumeTraded > minimumVolume)
     .sort((a, b) => {
       return b.priceChange - a.priceChange;
     });
@@ -26,7 +26,7 @@ export async function loadFalls(updateFunction) {
   }
   const mapped = await getBase();
   const priceFalls = mapped
-    .filter(item => item.latestVolumeTraded > minimumVolume && item.previousVolumeTraded > minimumVolume)
+    .filter(item => !item.utilizedTimeSeriesSearch && item.latestVolumeTraded > minimumVolume && item.previousVolumeTraded > minimumVolume)
     .sort((a, b) => {
       return a.priceChange - b.priceChange;
     });

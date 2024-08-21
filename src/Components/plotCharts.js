@@ -37,7 +37,7 @@ export default function loadLineChart(priceHistoryImmutable, chartType, timespan
     plot = volumeChart(priceHistoryDateRange, startingDate, timespan);
   }
 
-  plot.classList.add('absolute', 'inset-0','size-full')
+  plot.classList.add('absolute', 'top-0', 'inset-0','size-full')
   root.append(plot);
 
   setLoading(false)
@@ -54,11 +54,15 @@ function priceChart(priceHistory, startDate) {
   const min = getMin(priceHistory, 'Low');
   const max = getMax(priceHistory, 'High');
   const range = Math.abs(max - min);
-  const offset = range === 0 ? 1 : range / 20;
+  let offset = range === 0 ? 1 : range / 20;
+  if (range < 10) offset = 1;
+  if (min - offset < 0) offset = min;
 
 
   return Plot.plot({
-    marginLeft: 50,
+    marginLeft: 40,
+    marginRight: 15,
+    marginBottom: 37,
     grid: true,
     color: {
       domain: [-1, 0, 1],
@@ -81,7 +85,7 @@ function priceChart(priceHistory, startDate) {
     marks: [
       //Have to check if max is less than min becuase theres weird date with items like pure essence
       Plot.ruleY([(max > min ? min : max) - offset]),
-      Plot.ruleY([range < 2 ? max + 1 : max], {
+      Plot.ruleY([range < 10 ? max + 2 : max], {
         opacity: 0
       }),
 
@@ -106,11 +110,18 @@ function priceChart(priceHistory, startDate) {
       //Candlestick price moves line
       Plot.ruleX(priceHistory, {
         x: 'Date',
-        y1: d => d.Low ? d.Low : d.averagePrice,
-        y2: d => d.High ? d.High : d.averagePrice,
+        y1: 'Low',
+        y2: 'High',
         stroke: d => Math.sign(d.averagePrice - d.previousPrice),
-        strokeWidth: 2,
-        marker: 'dot'
+        strokeWidth: 1.5,
+        strokeLinecap: 'round',
+        marker: 'none'
+      }),
+      Plot.dot(priceHistory, {
+        x: 'Date',
+        y: 'averagePrice',
+        fill: d => Math.sign(d.averagePrice - d.previousPrice),
+        r: 2.5
       }),
       
       // Plot.lineY(priceHistory, {
@@ -120,15 +131,17 @@ function priceChart(priceHistory, startDate) {
       //   marker: 'dot'
       // }),
 
-      Plot.tip(priceHistory, 
-        Plot.pointer({
+      Plot.tip(priceHistory,
+        Plot.pointerX({
           x: 'Date',
           y1: d => d.Low ? d.Low : d.averagePrice,
           y2: d => d.High ? d.High : d.averagePrice,
           title: d => 
-            `Date  ${formatDate(d.Date)}\n${(d.High && d.Low) ? `High  ${formatPrice(d.High)}\nLow   ${formatPrice(d.Low)}` : `Price  ${formatPrice(d.averagePrice)}`}`,
+            `Date  ${formatDate(d.Date)}\n${`Price  ${formatPrice(d.averagePrice)}`}${(d.High && d.Low) ? `\nHigh  ${formatPrice(d.High)}\nLow   ${formatPrice(d.Low)}` : ''}`,
           fill: '#665b47',
-          fontSize: 14
+          fontSize: 14,
+          stroke: '#333333',
+          strokeWidth: 1.5
         })
       ),
     ],
@@ -145,11 +158,11 @@ function volumeChart(priceHistory, startDate, timepsan) {
   let labelOffset;
   switch (timepsan) {
     default:
-    case '1month': labelOffset = 11;
+    case '1month': labelOffset = 13;
       break;
-    case '3months': labelOffset = 13;
+    case '3months': labelOffset = 4;
       break;
-    case '6months': labelOffset = 15;
+    case '6months': labelOffset = 2;
       break;
     case '1year': labelOffset = 1;
       break;
@@ -157,6 +170,8 @@ function volumeChart(priceHistory, startDate, timepsan) {
 
   return Plot.plot({
     grid: true,
+    marginRight: 15,
+    marginBottom: 37,
     style: {
       fontFamily: 'inherit',
       fontSize: 12
@@ -188,26 +203,28 @@ function volumeChart(priceHistory, startDate, timepsan) {
       Plot.rectY(priceHistory, {
         x: 'Date',
         y1: 0, 
-        y2: 'Low Price Volume',
+        y2: 'lowPriceVolume',
         fill: '#d97706'
       }),
       //High Price Volume
       Plot.rectY(priceHistory, {
         x: 'Date',
-        y1: 'Low Price Volume',
-        y2: 'High Price Volume',
+        y1: 'lowPriceVolume',
+        y2: 'highPriceVolume',
         fill: '#0ea5e9'
       }),
 
       Plot.tip(priceHistory,
         Plot.pointerX({
           x: 'Date',
-          y: 'High Price Volume',
+          y1: 0,
+          y2: d => d.highPriceVolume > d.lowPriceVolume ? d.highPriceVolume : d.lowPriceVolume,
           fill: '#665b47',
           fontSize: 14,
           title: d => 
-            //Weird string literal to get the spacing correct
-            `Date${d['High Price Volume'] > 1000 || d['Low Price Volume'] > 1000 ? '              ' : '          '}${formatDate(d.Date)}\nHigh Price Volume  ${formatVolume(d['High Price Volume'])}\nLow Price Volume   ${formatVolume(d['Low Price Volume'])}`
+            `Date${formatDate(d.Date)}\nTotal Volume  ${formatVolume(d.totalVolume)}${(d.highPriceVolume > 0 && d.lowPriceVolume > 0) ? `\nHigh Price Volume  ${formatVolume(d.highPriceVolume)}\nLow Price Volume  ${formatVolume(d.lowPriceVolume)}` : ''}`,
+          stroke: '#333333',
+          strokeWidth: 1.5
         })
       )
     ]

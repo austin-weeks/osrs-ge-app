@@ -1,33 +1,65 @@
-import React, { useEffect, useState } from "react";
-import RollingText, { RollingTextVertical } from "./Components/RollingText";
+import React, { useContext, useEffect, useState } from "react";
+import { RollingIconsVertical, RollingLogo, RollingWatchList } from "./Components/RollingText";
 import Categories from "./Components/Categories";
 import ItemInfo from "./Components/ItemInfo";
 import ItemList from "./Components/ItemList";
 import LoadingSpinner from "./Components/LoadingSpinner";
 import { loadFalls, loadMostTraded, loadMostValuable, loadRises } from "../API Calls/getCategories";
+import { getMyList } from "../API Calls/myList";
+import SearchBox from "./Components/SearchBox";
+import getSearchResults from "../API Calls/search";
+import { initializeData } from "../API Calls/fetchItems";
+import IntroPage from "./Components/IntroPages";
 
-
-// let catgegories = 'rises' || 'falls' || 'most-valuable' || 'most-traded' || 'my-list';
 
 export const appContext = React.createContext(null);
 
 export default function StockApp() {
-  const [selectedItem, setSelectedItem] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [currItems, setItems] = useState(null);
-  const [currCategory, setCategory] = useState('rises');
+  const [baseDataLoadCalled, setBaseDataLoadCalled] = useState(false);
+  const [baseDataLoaded, setBaseDataLoaded] = useState(false);
+  const [categoryPicked, setCategoryPicked] = useState(null);
+  useEffect(() => {
+    if (baseDataLoadCalled) return;
+    setBaseDataLoadCalled(true);
+    initializeData(() => {
+      setBaseDataLoaded(true);
+    });
+  }, []);
+  useEffect(() => {
+    if (baseDataLoaded && categoryPicked) {
+      updateCategory(categoryPicked);
+      return;
+    }
+  }, [categoryPicked, baseDataLoaded]);
 
-  function updateCategory(updatedCategory) {
-    if (currCategory === updatedCategory) return;
+
+
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [currItems, setItems] = useState(null);
+  const [currCategory, setCategory] = useState(null);
+  const queryState = useState(null);
+
+  function refreshCategory() {
+    updateCategory(currCategory, true);
+  }
+
+  function updateCategory(updatedCategory, forceUpdate = false) {
+    if (!forceUpdate && currCategory === updatedCategory) return;
 
     setLoading(true);
     setSelectedItem(null);
     setCategory(updatedCategory);
     if (updatedCategory === 'rises') loadRises(loadItems);
-    else if (updatedCategory === 'falls')  loadFalls(loadItems);
+    else if (updatedCategory === 'falls') loadFalls(loadItems);
     else if (updatedCategory === 'most-valuable') loadMostValuable(loadItems);
     else if (updatedCategory === 'most-traded') loadMostTraded(loadItems);
-    else if (updatedCategory === 'my-list') setItems({error: 'my-list not implemented'});
+    else if (updatedCategory === 'my-list') getMyList(loadItems);
+    else if (updatedCategory === 'search') {
+      setItems(null);
+      setSelectedItem(null);
+      setLoading(false);
+    }
     else {
       console.error('updating category to invalid category');
     }
@@ -37,13 +69,14 @@ export default function StockApp() {
     setSelectedItem(items[0])
     setLoading(false);
   }
-
-  useEffect(() => {
-    loadRises(loadItems);
-  }, [])
-
+  function loadSearchResults(query) {
+    setSelectedItem(null);
+    getSearchResults(query, setItems);
+  }
 
   let content = <MainSection />;
+  if (!baseDataLoaded || !categoryPicked) content = <IntroPage categoryPicked={categoryPicked} setCategoryPicked={setCategoryPicked} />
+
   if (loading) content = (
     <div className="size-full flex items-center justify-center">
       <LoadingSpinner />
@@ -53,9 +86,9 @@ export default function StockApp() {
 
   return (
     <div className="text-3xl max-h-screen h-screen w-screen overflow-auto flex flex-col items-center">
-      <RollingText className="text-4xl h1 border-b-2 border-border" text="OLD SCHOOL RUNESCAPE GRAND EXCHANGE TRACKER -" />
+      <RollingLogo className="border-b-2 border-border" toRight />
       <div className="flex flex-row size-full overflow-auto">
-        <RollingTextVertical flipped className="text-4xl" text="IDK WHAT TO PUT BUT HERE WE GO -" />
+        <RollingIconsVertical flipped />
 
         {/* Main app section */}
         <appContext.Provider value={{
@@ -63,24 +96,37 @@ export default function StockApp() {
           currCategory,
           selectedItem,
           updateCategory,
-          setSelectedItem
+          refreshCategory,
+          setSelectedItem,
+          loadSearchResults,
+          queryState
         }}>
           {content}
         </appContext.Provider>
 
-        <RollingTextVertical className="text-4xl" text="WHEEEEEEEEEEEEEE -" />
+        <RollingIconsVertical />
       </div>
-      <RollingText className="text-4xl border-t-2 border-border" text="GOOD DESIGN BY ME -" toRight />
+      <RollingWatchList className="border-t-2 border-border" />
     </div>
   );
 }
 
+
 function MainSection() {
+  const { currCategory } = useContext(appContext);
   return (
-    <div className="flex flex-col items-center overflow-auto size-full text-3xl">
+    <div className="flex flex-col items-center p-1 gap-0.5 sm:gap-1 overflow-auto size-full">
       <Categories />
-      <div className="flex flew-row w-full overflow-auto max-h-full h-full">
-        <ItemList />
+      <div className="flex flew-row w-full gap-1 sm:gap-1.5 overflow-auto max-h-full h-full">
+        <div className="flex flex-col gap-1 
+          w-[7rem] sm:w-[11rem] md:w-[13rem] lg:w-[16rem] xl:w-[19rem]
+          overflow-auto flex-shrink-0"
+        >
+          {currCategory === 'search' &&
+            <SearchBox />
+          }
+          <ItemList />
+        </div>
         <ItemInfo />
         {/* <LoadingSpinner /> */}
       </div>

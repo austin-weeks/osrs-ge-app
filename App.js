@@ -1069,7 +1069,7 @@ var require_react_development = __commonJS({
           }
           return dispatcher;
         }
-        function useContext5(Context) {
+        function useContext7(Context) {
           var dispatcher = resolveDispatcher();
           {
             if (Context._context !== void 0) {
@@ -1083,7 +1083,7 @@ var require_react_development = __commonJS({
           }
           return dispatcher.useContext(Context);
         }
-        function useState4(initialState) {
+        function useState7(initialState) {
           var dispatcher = resolveDispatcher();
           return dispatcher.useState(initialState);
         }
@@ -1091,11 +1091,11 @@ var require_react_development = __commonJS({
           var dispatcher = resolveDispatcher();
           return dispatcher.useReducer(reducer2, initialArg, init2);
         }
-        function useRef(initialValue) {
+        function useRef4(initialValue) {
           var dispatcher = resolveDispatcher();
           return dispatcher.useRef(initialValue);
         }
-        function useEffect3(create3, deps) {
+        function useEffect7(create3, deps) {
           var dispatcher = resolveDispatcher();
           return dispatcher.useEffect(create3, deps);
         }
@@ -1704,7 +1704,7 @@ var require_react_development = __commonJS({
         }
         var actScopeDepth = 0;
         var didWarnNoAwaitAct = false;
-        function act3(callback) {
+        function act2(callback) {
           {
             var prevActScopeDepth = actScopeDepth;
             actScopeDepth++;
@@ -1862,7 +1862,7 @@ var require_react_development = __commonJS({
         exports.StrictMode = REACT_STRICT_MODE_TYPE;
         exports.Suspense = REACT_SUSPENSE_TYPE;
         exports.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED = ReactSharedInternals;
-        exports.act = act3;
+        exports.act = act2;
         exports.cloneElement = cloneElement$1;
         exports.createContext = createContext2;
         exports.createElement = createElement$1;
@@ -1873,20 +1873,20 @@ var require_react_development = __commonJS({
         exports.lazy = lazy;
         exports.memo = memo;
         exports.startTransition = startTransition;
-        exports.unstable_act = act3;
+        exports.unstable_act = act2;
         exports.useCallback = useCallback;
-        exports.useContext = useContext5;
+        exports.useContext = useContext7;
         exports.useDebugValue = useDebugValue;
         exports.useDeferredValue = useDeferredValue;
-        exports.useEffect = useEffect3;
+        exports.useEffect = useEffect7;
         exports.useId = useId;
         exports.useImperativeHandle = useImperativeHandle;
         exports.useInsertionEffect = useInsertionEffect;
         exports.useLayoutEffect = useLayoutEffect;
         exports.useMemo = useMemo;
         exports.useReducer = useReducer;
-        exports.useRef = useRef;
-        exports.useState = useState4;
+        exports.useRef = useRef4;
+        exports.useState = useState7;
         exports.useSyncExternalStore = useSyncExternalStore;
         exports.useTransition = useTransition;
         exports.version = ReactVersion;
@@ -2382,9 +2382,9 @@ var require_react_dom_development = __commonJS({
         if (typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ !== "undefined" && typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart === "function") {
           __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart(new Error());
         }
-        var React10 = require_react();
+        var React13 = require_react();
         var Scheduler = require_scheduler();
-        var ReactSharedInternals = React10.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+        var ReactSharedInternals = React13.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
         var suppressWarning = false;
         function setSuppressWarning(newSuppressWarning) {
           {
@@ -3989,7 +3989,7 @@ var require_react_dom_development = __commonJS({
           {
             if (props.value == null) {
               if (typeof props.children === "object" && props.children !== null) {
-                React10.Children.forEach(props.children, function(child) {
+                React13.Children.forEach(props.children, function(child) {
                   if (child == null) {
                     return;
                   }
@@ -23523,51 +23523,227 @@ var require_client = __commonJS({
 });
 
 // src/entry.jsx
-var import_react9 = __toESM(require_react());
+var import_react12 = __toESM(require_react());
 var import_client = __toESM(require_client());
 
 // src/StockApp.jsx
-var import_react8 = __toESM(require_react());
+var import_react11 = __toESM(require_react());
 
 // src/Components/RollingText.jsx
 var import_react = __toESM(require_react());
-function RollingText({ text: text2, toRight = false, ...props }) {
-  let repeatedText = text2;
-  for (let i = 0; i < 100; i++) {
-    repeatedText += " " + text2;
+
+// API Calls/fetchItems.js
+var baseData = null;
+var LATEST_BULK_DATA_TIMESTAMP;
+async function initializeData(callback) {
+  await getBase();
+  callback();
+}
+async function getBase() {
+  if (baseData != null) return baseData.slice();
+  try {
+    const respItems = await fetch("https://prices.runescape.wiki/api/v1/osrs/mapping");
+    const itemDetails = await respItems.json();
+    itemDetails.sort((a2, b) => a2.id - b.id);
+    const respLastRecordedPrices = await fetch("https://prices.runescape.wiki/api/v1/osrs/latest");
+    const jsonLastRecordedPrices = await respLastRecordedPrices.json();
+    const recordedPrices = Object.entries(jsonLastRecordedPrices.data);
+    const timestampDayOffset = 86400;
+    const maxFetches = 7;
+    let dailyPrices = [];
+    let lastTimestamp = null;
+    for (let i = 0; i < maxFetches; i++) {
+      const data = await fetch24HourPrices(lastTimestamp);
+      dailyPrices.push(data.prices);
+      if (i === 0) LATEST_BULK_DATA_TIMESTAMP = data.timestamp;
+      lastTimestamp = data.timestamp - timestampDayOffset;
+    }
+    let items = [];
+    for (const item of itemDetails) {
+      const entryInRecordedPrices = recordedPrices.find((price) => parseInt(price[0]) === item.id);
+      if (!entryInRecordedPrices) {
+        continue;
+      }
+      let currentPriceData = null;
+      let previousPriceData = null;
+      let currentFoundAtIndex;
+      let utilizedTimeSeriesSearch = false;
+      for (let i = 0; i < dailyPrices.length; i++) {
+        const match = dailyPrices[i].find((price) => parseInt(price[0]) === item.id);
+        if (match) {
+          if (match[1].avgHighPrice == null && match[1].avgLowPrice == null) continue;
+          currentFoundAtIndex = i;
+          currentPriceData = match[1];
+          break;
+        }
+      }
+      if (currentPriceData != null) {
+        for (let i = currentFoundAtIndex + 1; i < dailyPrices.length; i++) {
+          const match = dailyPrices[i].find((price) => parseInt(price[0]) === item.id);
+          if (match) {
+            if (match[1].avgHighPrice == null && match[1].avgLowPrice == null) continue;
+            previousPriceData = match[1];
+            break;
+          }
+        }
+      }
+      if (!currentPriceData || !previousPriceData) {
+        utilizedTimeSeriesSearch = true;
+        const { current, previous } = await fetchItemCurrentAndPrevious(item.id);
+        if (!current || !previous) {
+          continue;
+        }
+        currentPriceData = current;
+        previousPriceData = previous;
+      }
+      const currentPrice = getAveragePrice(currentPriceData);
+      const previousPrice = getAveragePrice(previousPriceData);
+      const priceChange = (currentPrice - previousPrice) / previousPrice * 100;
+      items.push({
+        priceChange,
+        id: item.id,
+        name: item.name,
+        examine: item.examine,
+        members: item.members,
+        icon: item.icon.replaceAll(" ", "_"),
+        wikiLink: item.icon.replaceAll(" ", "_").slice(0, item.icon.length - 4),
+        highAlch: item.highalch,
+        buyLimit: item.limit,
+        utilizedTimeSeriesSearch,
+        latestPrice: currentPrice,
+        yesterdayPrice: previousPrice,
+        latestVolumeTraded: currentPriceData.highPriceVolume + currentPriceData.lowPriceVolume,
+        previousVolumeTraded: previousPriceData.highPriceVolume + previousPriceData.lowPriceVolume
+      });
+    }
+    baseData = items;
+    return baseData.slice();
+  } catch (e) {
+    console.error(e);
+    return { error: e };
   }
-  return /* @__PURE__ */ import_react.default.createElement("div", { className: `w-full overflow-x-hidden flex-shrink-0 pt-1 hover:cursor-crosshair ${props.className}` }, /* @__PURE__ */ import_react.default.createElement("div", { className: `w-full whitespace-nowrap pause-hover ${toRight ? "animate-scroll-text-right" : "animate-scroll-text-left"}` }, repeatedText));
 }
-function RollingTextVertical({ text: text2, flipped = false, ...props }) {
-  let repeatedText = text2;
-  for (let i = 0; i < 50; i++) {
-    repeatedText += " " + text2;
+async function fetch24HourPrices(timestamp) {
+  const resp = await fetch(`https://prices.runescape.wiki/api/v1/osrs/24h${timestamp ? `?timestamp=${timestamp}` : ""}`);
+  const data = await resp.json();
+  const prices = Object.entries(data.data);
+  prices.sort((a2, b) => a2[0] - b[0]);
+  return {
+    prices,
+    timestamp: data.timestamp
+  };
+}
+async function fetchItemCurrentAndPrevious(itemId) {
+  const resp = await fetch(`https://prices.runescape.wiki/api/v1/osrs/timeseries?timestep=24h&id=${itemId}`);
+  const data = await resp.json();
+  const priceHistory = data.data;
+  let latestPriceData;
+  let previousPriceData;
+  let latestFoundAtIndex;
+  for (let i = priceHistory.length - 1; i >= 0; i--) {
+    if (priceHistory[i].avgHighPrice != null || priceHistory[i].avgLowPrice != null) {
+      latestPriceData = priceHistory[i];
+      latestFoundAtIndex = i;
+      break;
+    }
   }
-  return /* @__PURE__ */ import_react.default.createElement("div", { className: `h-full overflow-y-hidden flex-shrink-0 hover:cursor-crosshair border-border border-l-2 ${flipped ? "pl-1 rotate-180" : "pr-1"}` }, /* @__PURE__ */ import_react.default.createElement("div", { className: `h-full whitespace-nowrap pause-hover animate-scroll-text-vertical ${props.className}` }, repeatedText));
+  for (let i = latestFoundAtIndex - 1; i >= 0; i--) {
+    if (priceHistory[i].avgHighPrice != null || priceHistory[i].avgLowPrice != null) {
+      previousPriceData = priceHistory[i];
+      break;
+    }
+  }
+  return {
+    current: latestPriceData,
+    previous: previousPriceData
+  };
+}
+function getAveragePrice(priceData) {
+  let average;
+  const { avgHighPrice, avgLowPrice, lowPriceVolume, highPriceVolume } = priceData;
+  if (avgHighPrice == null || avgLowPrice == null) {
+    average = avgHighPrice + avgLowPrice;
+  } else {
+    const highSales = highPriceVolume * avgHighPrice;
+    const lowSales = lowPriceVolume * avgLowPrice;
+    const totalVolume = lowPriceVolume + highPriceVolume;
+    average = (highSales + lowSales) / totalVolume;
+  }
+  return Math.round(average);
 }
 
-// src/Components/Categories.jsx
-var import_react3 = __toESM(require_react());
-
-// src/Components/Button.jsx
-var import_react2 = __toESM(require_react());
-function Button({ active = false, small = false, disabled = false, ...props }) {
-  return /* @__PURE__ */ import_react2.default.createElement("button", { className: `text-rs-shadow border-[2px] flex-grow
-      ${small ? "text-xl" : "px-3 pt-1.5 pb-1"}
-      ${!disabled && !active && "bg-rs-medium"}
-      ${disabled && "bg-neutral-700 pointer-events-none"}
-      ${active ? "border-rs-text bg-rs-dark" : "border-t-rs-border-light border-l-rs-border-light border-b-stone-800 border-r-stone-800 rounded-sm"}
-      ` }, /* @__PURE__ */ import_react2.default.createElement("div", { ...props }));
+// API Calls/myList.js
+var listKey = "watchlist-ids";
+var myListItemEntries = null;
+async function getMyList(updateFunction, forceReload = false) {
+  if (!forceReload && myListItemEntries != null) {
+    updateFunction(myListItemEntries);
+    return;
+  }
+  const mapped = await getBase();
+  const itemIDs = getMyListItemIDs();
+  myListItemEntries = [];
+  for (const id2 of itemIDs) {
+    const match = mapped.find((item) => item.id === id2);
+    match.isMyListItem = true;
+    myListItemEntries.push(match);
+  }
+  updateFunction(myListItemEntries);
 }
-
-// src/Components/Categories.jsx
-function Categories() {
-  const { currCategory, updateCategory } = (0, import_react3.useContext)(appContext);
-  return /* @__PURE__ */ import_react3.default.createElement("div", { className: "flex flex-row w-full gap-1 items-center justify-center py-1" }, /* @__PURE__ */ import_react3.default.createElement(Button, null, "Search for Item"), /* @__PURE__ */ import_react3.default.createElement(Button, { active: currCategory === "rises", onClick: () => updateCategory("rises") }, "Price Rises"), /* @__PURE__ */ import_react3.default.createElement(Button, { active: currCategory === "falls", onClick: () => updateCategory("falls") }, "Price Falls"), /* @__PURE__ */ import_react3.default.createElement(Button, { active: currCategory === "most-valuable", onClick: () => updateCategory("most-valuable") }, "Most Valuable Trades"), /* @__PURE__ */ import_react3.default.createElement(Button, { active: currCategory === "most-traded", onClick: () => updateCategory("most-traded") }, "Most Traded"));
+var myListIDs = null;
+var defaultListIDs = [
+  //Dragon Scimitar
+  4587,
+  //Torva full helm
+  26382,
+  //Dragon Platebody
+  21892,
+  //BluePartyhat
+  1042,
+  //Bond
+  13190,
+  //Blood rune
+  565
+];
+function getMyListItemIDs() {
+  myListIDs = localStorage.getItem(listKey);
+  if (myListIDs == null) {
+    return myListIDs = defaultListIDs;
+  } else if (!myListIDs) {
+    return [];
+  } else {
+    return myListIDs.split(",").map((id2) => parseInt(id2));
+  }
 }
-
-// src/Components/ItemInfo.jsx
-var import_react6 = __toESM(require_react());
+var refreshRollingList;
+function subscribeToListUpdates(callback) {
+  refreshRollingList = callback;
+}
+async function saveList(idsArr, updateFunction) {
+  myListIDs = idsArr;
+  try {
+    localStorage.setItem(listKey, idsArr.toString());
+  } catch (e) {
+    console.log(e);
+    return;
+  }
+  if (updateFunction != null) getMyList(updateFunction, true);
+  if (refreshRollingList) refreshRollingList();
+}
+function addItemToMyList(item, updateFunction) {
+  item.isMyListItem = true;
+  const itemIds = getMyListItemIDs();
+  const newItemIds = itemIds.slice();
+  newItemIds.push(item.id);
+  saveList(newItemIds, updateFunction ? updateFunction : () => {
+  });
+}
+function removeItemFromMyList(item, updateFunction) {
+  item.isMyListItem = false;
+  const itemIds = getMyListItemIDs();
+  const newItemIds = itemIds.filter((id2) => id2 !== item.id);
+  saveList(newItemIds, updateFunction);
+}
 
 // src/Components/formatters.js
 function formatDate(date2) {
@@ -23622,6 +23798,141 @@ function formatVolume(volume2) {
     return `${volume2}`;
   }
 }
+
+// src/Components/RollingText.jsx
+var osrsLogoSmall = "https://oldschool.runescape.wiki/images/RuneScape_2_logo.png?47c97&20240819234416";
+function RollingLogo({ toRight = false, ...props }) {
+  function LogoAndText() {
+    return /* @__PURE__ */ import_react.default.createElement("span", { className: "flex flex-row gap-4 md:gap-6 justify-center items-center flex-shrink-0" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "h-[42px] md:h-[54px] w-[113px] md:w-[150px] relative overflow-hidden" }, /* @__PURE__ */ import_react.default.createElement("img", { src: osrsLogoSmall, alt: "Old School Runescape", className: "absolute top-1 md:top-0.5 left-0 object-contain h-[36px] md:h-[50px] aspect-auto" })), /* @__PURE__ */ import_react.default.createElement("span", { className: "text-rs-shadow md:text-rs-shadow-large pt-1 pb-0.5 text-3xl md:text-5xl" }, "Grand Exchange Tracker"));
+  }
+  let repititions = new Array(50);
+  repititions.fill(0);
+  return /* @__PURE__ */ import_react.default.createElement("div", { className: `w-full overflow-x-hidden flex-shrink-0 hover:cursor-crosshair ${props.className}` }, /* @__PURE__ */ import_react.default.createElement("div", { className: `w-full flex flex-row gap-4 md:gap-6 justify-center items-center whitespace-nowrap pause-hover ${toRight ? "animate-scroll-text-right" : "animate-scroll-text-left"}` }, repititions.map((el, ind) => /* @__PURE__ */ import_react.default.createElement(LogoAndText, { key: ind }))));
+}
+var runeIcons = [
+  "Air_rune.png?248b4",
+  "Mind_rune.png?92ebd",
+  "Water_rune.png?75a26",
+  "Earth_rune.png?0b998",
+  "Fire_rune.png?3859a",
+  "Body_rune.png?acf91",
+  "Cosmic_rune.png?1f2bc",
+  "Chaos_rune.png?3fbd5",
+  "Nature_rune.png?ed6d0",
+  "Law_rune.png?6592f",
+  "Astral_rune.png?2baad",
+  "Death_rune.png?3a184",
+  "Blood_rune.png?3d4c6",
+  "Soul_rune.png?44c1f"
+];
+function RollingIconsVertical({ flipped = false, ...props }) {
+  let repeatedIcons = [];
+  for (let i = 0; i < 30; i++) {
+    repeatedIcons = repeatedIcons.concat(runeIcons);
+  }
+  return /* @__PURE__ */ import_react.default.createElement(
+    "div",
+    {
+      className: `hidden md:flex h-full w-11 text-4xl overflow-y-hidden justify-center flex-shrink-0 hover:cursor-crosshair border-border border-l-2 
+          ${flipped ? "rotate-180" : ""}
+        `
+    },
+    /* @__PURE__ */ import_react.default.createElement("div", { className: `h-full whitespace-nowrap flex gap-4 pause-hover animate-scroll-text-vertical ${props.className}` }, repeatedIcons.map((iconLink, ind) => /* @__PURE__ */ import_react.default.createElement("img", { key: ind, src: `https://oldschool.runescape.wiki/images/${iconLink}`, className: `aspect-square w-9 ${flipped && "rotate-180"}` })))
+  );
+}
+function RollingWatchList({ toRight = false, ...props }) {
+  const [items, setItems] = (0, import_react.useState)(null);
+  const [subscribed, setSubscribed] = (0, import_react.useState)(false);
+  const [forcedUpdate, setForcedUpdate] = (0, import_react.useState)(0);
+  function forceUpdate() {
+    setForcedUpdate(Math.random());
+  }
+  (0, import_react.useEffect)(() => {
+    if (!subscribed) {
+      setSubscribed(true);
+      subscribeToListUpdates(forceUpdate);
+    }
+  }, []);
+  (0, import_react.useEffect)(() => {
+    getMyList(setItems);
+  }, [forcedUpdate]);
+  if (!items || items.length === 0) return /* @__PURE__ */ import_react.default.createElement("div", { className: "w-full flex-shrink-0 h-[44px] md:h-[52px] border-t-2 border-border" });
+  let repeatedItems = [];
+  for (let i = 0; i < 30; i++) {
+    repeatedItems = repeatedItems.concat(items);
+  }
+  return /* @__PURE__ */ import_react.default.createElement("div", { className: `w-full overflow-x-hidden flex-shrink-0 py-1 hover:cursor-crosshair ${props.className}` }, /* @__PURE__ */ import_react.default.createElement("div", { className: `w-full whitespace-nowrap flex flex-row gap-4 pause-hover ${toRight ? "animate-scroll-text-right" : "animate-scroll-text-left"}` }, repeatedItems.map((item, ind) => {
+    const formattedPrice = formatGP(item.latestPrice);
+    return /* @__PURE__ */ import_react.default.createElement("div", { key: ind, className: "flex flex-row flex-shrink-0 items-center justify-center md:py-1 gap-1.5 pl-4 border-l-2 border-border" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "flex-shrink-0 h-6 sm:h-7" }, /* @__PURE__ */ import_react.default.createElement("img", { src: `https://oldschool.runescape.wiki/images/${item.icon}`, className: "no-blurry object-contain h-full aspect-square" })), /* @__PURE__ */ import_react.default.createElement("div", { className: "text-start text-base sm:text-xl" }, item.name), /* @__PURE__ */ import_react.default.createElement("span", { className: "mt-0.5 text-2xl text-rs-shadow-small" }, "-"), /* @__PURE__ */ import_react.default.createElement("span", { className: `${formattedPrice.text} ${"text-base md:text-xl"}` }, formattedPrice.gp), item.priceChange >= 0 ? /* @__PURE__ */ import_react.default.createElement("span", { className: "text-green-600 text-base md:text-xl" }, "+", item.priceChange.toFixed(2), "%") : /* @__PURE__ */ import_react.default.createElement("span", { className: "text-red-600 text-base md:text-xl" }, item.priceChange.toFixed(2), "%"));
+  })));
+}
+
+// src/Components/Categories.jsx
+var import_react3 = __toESM(require_react());
+
+// src/Components/Button.jsx
+var import_react2 = __toESM(require_react());
+function Button({ active = false, small = false, large = false, disabled = false, ...props }) {
+  let sizeStyles = "";
+  if (small && large) throw new Error("cannot have a large and small styled buttom");
+  if (small) sizeStyles = "text-sm sm:text-lg md:text-xl sm:pt-0.5";
+  else if (large) sizeStyles = "text-2xl md:text-3xl xl:text-4xl px-4 xl:px-6 p-2 pt-3";
+  else sizeStyles = "px-3 pt-0.5 sm:pt-1 md:pt-1.5 sm:pb-0.5 md:pb-1";
+  return /* @__PURE__ */ import_react2.default.createElement("button", { className: `text-rs-shadow-small sm:text-rs-shadow border-[2px] flex-grow rounded-sm
+      ${sizeStyles}
+      ${!disabled && !active && "bg-rs-medium"}
+      ${disabled && "bg-neutral-700 pointer-events-none"}
+      ${active ? "border-t-rs-border-light-active border-l-rs-border-light-active border-b-rs-border-dark-active border-r-rs-border-dark-active bg-rs-dark" : "border-t-rs-border-light border-l-rs-border-light border-b-stone-800 border-r-stone-800"}
+      ` }, /* @__PURE__ */ import_react2.default.createElement("div", { ...props }));
+}
+
+// src/Components/Categories.jsx
+function Categories() {
+  const { currCategory, updateCategory } = (0, import_react3.useContext)(appContext);
+  return /* @__PURE__ */ import_react3.default.createElement("div", { className: "flex flex-row flex-wrap lg:flex-nowrap w-full gap-0.5 sm:gap-1 items-center justify-center text-base sm:text-xl xl:text-2xl" }, /* @__PURE__ */ import_react3.default.createElement(Button, { active: currCategory === "search", onClick: () => updateCategory("search") }, /* @__PURE__ */ import_react3.default.createElement(
+    IconAndText,
+    {
+      iconSrc: "https://runescape.wiki/images/Magnifying_glass.png?51c4f",
+      text: "Search"
+    }
+  )), /* @__PURE__ */ import_react3.default.createElement(Button, { active: currCategory === "my-list", onClick: () => updateCategory("my-list") }, /* @__PURE__ */ import_react3.default.createElement(
+    IconAndText,
+    {
+      iconSrc: "https://oldschool.runescape.wiki/images/List_of_elders.png?30594",
+      text: "My Watchlist"
+    }
+  )), /* @__PURE__ */ import_react3.default.createElement(Button, { active: currCategory === "rises", onClick: () => updateCategory("rises") }, /* @__PURE__ */ import_react3.default.createElement(
+    IconAndText,
+    {
+      iconSrc: "https://www.runescape.com/img/rsp777/grand_exchange/positive.gif",
+      text: "Price Rises"
+    }
+  )), /* @__PURE__ */ import_react3.default.createElement(Button, { active: currCategory === "falls", onClick: () => updateCategory("falls") }, /* @__PURE__ */ import_react3.default.createElement(
+    IconAndText,
+    {
+      iconSrc: "https://www.runescape.com/img/rsp777/grand_exchange/negative.gif",
+      text: "Price Falls"
+    }
+  )), /* @__PURE__ */ import_react3.default.createElement(Button, { active: currCategory === "most-valuable", onClick: () => updateCategory("most-valuable") }, /* @__PURE__ */ import_react3.default.createElement(
+    IconAndText,
+    {
+      iconSrc: "https://oldschool.runescape.wiki/images/Bank_icon.png?b3b57",
+      text: "Most Valuable Trades"
+    }
+  )), /* @__PURE__ */ import_react3.default.createElement(Button, { active: currCategory === "most-traded", onClick: () => updateCategory("most-traded") }, /* @__PURE__ */ import_react3.default.createElement(
+    IconAndText,
+    {
+      iconSrc: "https://oldschool.runescape.wiki/images/Stats_icon.png?1b467",
+      text: "Most Traded"
+    }
+  )));
+}
+function IconAndText({ iconSrc, text: text2 }) {
+  return /* @__PURE__ */ import_react3.default.createElement("div", { className: "flex flex-row justify-center items-center gap-2" }, /* @__PURE__ */ import_react3.default.createElement("img", { src: iconSrc, className: "size-4 sm:size-6 aspect-square object-contain no-blurry -ml-2 mb-1" }), /* @__PURE__ */ import_react3.default.createElement("span", { className: "truncate" }, text2));
+}
+
+// src/Components/ItemInfo.jsx
+var import_react7 = __toESM(require_react());
 
 // src/Components/Graph.jsx
 var import_react5 = __toESM(require_react());
@@ -32940,8 +33251,8 @@ function isScaleOptions(option) {
 function isOptions(option) {
   return isObject(option) && typeof option.transform !== "function";
 }
-function isDomainSort(sort2) {
-  return isOptions(sort2) && sort2.value === void 0 && sort2.channel === void 0;
+function isDomainSort(sort3) {
+  return isOptions(sort3) && sort3.value === void 0 && sort3.channel === void 0;
 }
 function maybeZero(x2, x12, x22, x3 = identity6) {
   if (x12 === void 0 && x22 === void 0) {
@@ -33166,10 +33477,10 @@ function maybeFrameAnchor(value = "middle") {
 }
 function inherit2(options = {}, ...rest) {
   let o = options;
-  for (const defaults8 of rest) {
-    for (const key in defaults8) {
+  for (const defaults9 of rest) {
+    for (const key in defaults9) {
       if (o[key] === void 0) {
-        const value = defaults8[key];
+        const value = defaults9[key];
         if (o === options) o = { ...o, [key]: value };
         else o[key] = value;
       }
@@ -33285,6 +33596,14 @@ function maybeSymbol(symbol2) {
   if (value) return value;
   throw new Error(`invalid symbol: ${symbol2}`);
 }
+function maybeSymbolChannel(symbol2) {
+  if (symbol2 == null || isSymbolObject(symbol2)) return [void 0, symbol2];
+  if (typeof symbol2 === "string") {
+    const value = symbols.get(`${symbol2}`.toLowerCase());
+    if (value) return [void 0, value];
+  }
+  return [symbol2, void 0];
+}
 
 // node_modules/@observablehq/plot/src/transforms/basic.js
 function basic({ filter: f1, sort: s1, reverse: r1, transform: t13, initializer: i1, ...options } = {}, transform2) {
@@ -33330,6 +33649,9 @@ function composeInitializer(i1, i2) {
     return { data: d2, facets: f2, channels: { ...c1, ...c22 } };
   };
 }
+function apply(options, t) {
+  return (options.initializer != null ? initializer : basic)(options, t);
+}
 function filterTransform(value) {
   return (data, facets) => {
     const V = valueof(data, value);
@@ -33338,6 +33660,12 @@ function filterTransform(value) {
 }
 function reverseTransform(data, facets) {
   return { data, facets: facets.map((I) => I.slice().reverse()) };
+}
+function sort2(order, { sort: sort3, ...options } = {}) {
+  return {
+    ...(isOptions(order) && order.channel !== void 0 ? initializer : apply)(options, sortTransform(order)),
+    sort: isDomainSort(sort3) ? sort3 : null
+  };
 }
 function sortTransform(value) {
   return (typeof value === "function" && value.length !== 1 ? sortData : sortValue)(value);
@@ -33503,9 +33831,9 @@ function maybeSubgroup(outputs, inputs) {
     }
   }
 }
-function maybeSort(facets, sort2, reverse2) {
-  if (sort2) {
-    const S = sort2.output.transform();
+function maybeSort(facets, sort3, reverse2) {
+  if (sort3) {
+    const S = sort3.output.transform();
     const compare = (i, j) => ascendingDefined2(S[i], S[j]);
     facets.forEach((f) => f.sort(compare));
   }
@@ -35556,13 +35884,13 @@ function applyFrameAnchor({ frameAnchor }, { width, height, marginTop, marginRig
 
 // node_modules/@observablehq/plot/src/mark.js
 var Mark = class {
-  constructor(data, channels = {}, options = {}, defaults8) {
+  constructor(data, channels = {}, options = {}, defaults9) {
     const {
       facet = "auto",
       facetAnchor,
       fx,
       fy,
-      sort: sort2,
+      sort: sort3,
       dx = 0,
       dy = 0,
       margin = 0,
@@ -35571,13 +35899,13 @@ var Mark = class {
       marginBottom = margin,
       marginLeft = margin,
       className,
-      clip = defaults8?.clip,
+      clip = defaults9?.clip,
       channels: extraChannels,
       tip: tip2,
       render
     } = options;
     this.data = data;
-    this.sort = isDomainSort(sort2) ? sort2 : null;
+    this.sort = isDomainSort(sort3) ? sort3 : null;
     this.initializer = initializer(options).initializer;
     this.transform = this.initializer ? options.transform : basic(options).transform;
     if (facet === null || facet === false) {
@@ -35590,7 +35918,7 @@ var Mark = class {
     this.facetAnchor = maybeFacetAnchor(facetAnchor);
     channels = maybeNamed(channels);
     if (extraChannels !== void 0) channels = { ...maybeChannels(extraChannels), ...channels };
-    if (defaults8 !== void 0) channels = { ...styles(this, options, defaults8), ...channels };
+    if (defaults9 !== void 0) channels = { ...styles(this, options, defaults9), ...channels };
     this.channels = Object.fromEntries(
       Object.entries(channels).map(([name, channel]) => {
         if (isOptions(channel.value)) {
@@ -37548,11 +37876,11 @@ var legendRegistry = /* @__PURE__ */ new Map([
   ["color", legendColor],
   ["opacity", legendOpacity]
 ]);
-function exposeLegends(scales, context, defaults8 = {}) {
+function exposeLegends(scales, context, defaults9 = {}) {
   return (key, options) => {
     if (!legendRegistry.has(key)) throw new Error(`unknown legend type: ${key}`);
     if (!(key in scales)) return;
-    return legendRegistry.get(key)(scales[key], legendOptions(context, defaults8[key], options), (key2) => scales[key2]);
+    return legendRegistry.get(key)(scales[key], legendOptions(context, defaults9[key], options), (key2) => scales[key2]);
   };
 }
 function legendOptions({ className, ...context }, { label, ticks: ticks2, tickFormat: tickFormat2 } = {}, options) {
@@ -38774,10 +39102,10 @@ function inferAxes(marks2, channelsByScale, options) {
   maybeAxis(axes, xAxis, axisX, "bottom", "top", options, x2);
   return axes;
 }
-function maybeAxis(axes, axis2, axisType, primary, secondary, defaults8, options) {
+function maybeAxis(axes, axis2, axisType, primary, secondary, defaults9, options) {
   if (!axis2) return;
   const both = isBoth(axis2);
-  options = axisOptions(both ? primary : axis2, defaults8, options);
+  options = axisOptions(both ? primary : axis2, defaults9, options);
   const { line: line2 } = options;
   if ((axisType === axisY || axisType === axisX) && line2 && !isNone(line2)) axes.push(frame2(lineOptions(options)));
   axes.push(axisType(options));
@@ -38790,8 +39118,8 @@ function maybeGrid(axes, grid, gridType, options) {
 function isBoth(value) {
   return /^\s*both\s*$/i.test(value);
 }
-function axisOptions(anchor, defaults8, {
-  line: line2 = defaults8.line,
+function axisOptions(anchor, defaults9, {
+  line: line2 = defaults9.line,
   ticks: ticks2,
   tickSize,
   tickSpacing,
@@ -38801,9 +39129,9 @@ function axisOptions(anchor, defaults8, {
   fontVariant,
   ariaLabel,
   ariaDescription,
-  label = defaults8.label,
+  label = defaults9.label,
   labelAnchor,
-  labelArrow = defaults8.labelArrow,
+  labelArrow = defaults9.labelArrow,
   labelOffset
 }) {
   return {
@@ -38975,7 +39303,7 @@ function binn(bx, by, gx, gy, {
   // TODO avoid materializing when unused?
   filter: filter2 = reduceCount,
   // return only non-empty bins by default
-  sort: sort2,
+  sort: sort3,
   reverse: reverse2,
   ...outputs
   // output channel definitions
@@ -38984,7 +39312,7 @@ function binn(bx, by, gx, gy, {
   by = maybeBin(by);
   outputs = maybeBinOutputs(outputs, inputs);
   reduceData = maybeBinReduce(reduceData, identity6);
-  sort2 = sort2 == null ? void 0 : maybeBinOutput("sort", sort2, inputs);
+  sort3 = sort3 == null ? void 0 : maybeBinOutput("sort", sort3, inputs);
   filter2 = filter2 == null ? void 0 : maybeBinEvaluator("filter", filter2, inputs);
   if (gx != null && hasOutput(outputs, "x", "x1", "x2")) gx = null;
   if (gy != null && hasOutput(outputs, "y", "y1", "y2")) gy = null;
@@ -39040,12 +39368,12 @@ function binn(bx, by, gx, gy, {
       const bin = bing(bx, by, data);
       let i = 0;
       for (const o of outputs) o.initialize(data);
-      if (sort2) sort2.initialize(data);
+      if (sort3) sort3.initialize(data);
       if (filter2) filter2.initialize(data);
       for (const facet of facets) {
         const groupFacet = [];
         for (const o of outputs) o.scope("facet", facet);
-        if (sort2) sort2.scope("facet", facet);
+        if (sort3) sort3.scope("facet", facet);
         if (filter2) filter2.scope("facet", facet);
         for (const [f, I] of maybeGroup(facet, G)) {
           for (const [k3, g] of maybeGroup(I, K2)) {
@@ -39061,13 +39389,13 @@ function binn(bx, by, gx, gy, {
               if (BX12) BX12.push(extent3.x1), BX22.push(extent3.x2);
               if (BY12) BY12.push(extent3.y1), BY22.push(extent3.y2);
               for (const o of outputs) o.reduce(b, extent3);
-              if (sort2) sort2.reduce(b, extent3);
+              if (sort3) sort3.reduce(b, extent3);
             }
           }
         }
         groupFacets.push(groupFacet);
       }
-      maybeSort(groupFacets, sort2, reverse2);
+      maybeSort(groupFacets, sort3, reverse2);
       return { data: groupData, facets: groupFacets };
     }),
     ...!hasOutput(outputs, "x") && (BX1 ? { x1: BX1, x2: BX2, x: mid(BX1, BX2) } : { x: x2, x1: x12, x2: x22 }),
@@ -39306,8 +39634,96 @@ var reduceY2 = {
   }
 };
 
-// node_modules/@observablehq/plot/src/marks/line.js
+// node_modules/@observablehq/plot/src/marks/dot.js
 var defaults7 = {
+  ariaLabel: "dot",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 1.5
+};
+function withDefaultSort(options) {
+  return options.sort === void 0 && options.reverse === void 0 ? sort2({ channel: "-r" }, options) : options;
+}
+var Dot = class extends Mark {
+  constructor(data, options = {}) {
+    const { x: x2, y: y2, r, rotate, symbol: symbol2 = circle_default2, frameAnchor } = options;
+    const [vrotate, crotate] = maybeNumberChannel(rotate, 0);
+    const [vsymbol, csymbol] = maybeSymbolChannel(symbol2);
+    const [vr, cr] = maybeNumberChannel(r, vsymbol == null ? 3 : 4.5);
+    super(
+      data,
+      {
+        x: { value: x2, scale: "x", optional: true },
+        y: { value: y2, scale: "y", optional: true },
+        r: { value: vr, scale: "r", filter: positive, optional: true },
+        rotate: { value: vrotate, optional: true },
+        symbol: { value: vsymbol, scale: "auto", optional: true }
+      },
+      withDefaultSort(options),
+      defaults7
+    );
+    this.r = cr;
+    this.rotate = crotate;
+    this.symbol = csymbol;
+    this.frameAnchor = maybeFrameAnchor(frameAnchor);
+    const { channels } = this;
+    const { symbol: symbolChannel } = channels;
+    if (symbolChannel) {
+      const { fill: fillChannel, stroke: strokeChannel } = channels;
+      symbolChannel.hint = {
+        fill: fillChannel ? fillChannel.value === symbolChannel.value ? "color" : "currentColor" : this.fill ?? "currentColor",
+        stroke: strokeChannel ? strokeChannel.value === symbolChannel.value ? "color" : "currentColor" : this.stroke ?? "none"
+      };
+    }
+  }
+  render(index2, scales, channels, dimensions, context) {
+    const { x: x2, y: y2 } = scales;
+    const { x: X3, y: Y3, r: R, rotate: A5, symbol: S } = channels;
+    const { r, rotate, symbol: symbol2 } = this;
+    const [cx, cy] = applyFrameAnchor(this, dimensions);
+    const circle2 = symbol2 === circle_default2;
+    const size = R ? void 0 : r * r * Math.PI;
+    if (negative(r)) index2 = [];
+    return create2("svg:g", context).call(applyIndirectStyles, this, dimensions, context).call(applyTransform, this, { x: X3 && x2, y: Y3 && y2 }).call(
+      (g) => g.selectAll().data(index2).enter().append(circle2 ? "circle" : "path").call(applyDirectStyles, this).call(
+        circle2 ? (selection2) => {
+          selection2.attr("cx", X3 ? (i) => X3[i] : cx).attr("cy", Y3 ? (i) => Y3[i] : cy).attr("r", R ? (i) => R[i] : r);
+        } : (selection2) => {
+          selection2.attr(
+            "transform",
+            template`translate(${X3 ? (i) => X3[i] : cx},${Y3 ? (i) => Y3[i] : cy})${A5 ? (i) => ` rotate(${A5[i]})` : rotate ? ` rotate(${rotate})` : ``}`
+          ).attr(
+            "d",
+            R && S ? (i) => {
+              const p = pathRound();
+              S[i].draw(p, R[i] * R[i] * Math.PI);
+              return p;
+            } : R ? (i) => {
+              const p = pathRound();
+              symbol2.draw(p, R[i] * R[i] * Math.PI);
+              return p;
+            } : S ? (i) => {
+              const p = pathRound();
+              S[i].draw(p, size);
+              return p;
+            } : (() => {
+              const p = pathRound();
+              symbol2.draw(p, size);
+              return p;
+            })()
+          );
+        }
+      ).call(applyChannelStyles, this, channels)
+    ).node();
+  }
+};
+function dot(data, { x: x2, y: y2, ...options } = {}) {
+  if (options.frameAnchor === void 0) [x2, y2] = maybeTuple(x2, y2);
+  return new Dot(data, { ...options, x: x2, y: y2 });
+}
+
+// node_modules/@observablehq/plot/src/marks/line.js
+var defaults8 = {
   ariaLabel: "line",
   fill: "none",
   stroke: "currentColor",
@@ -39327,7 +39743,7 @@ var Line = class extends Mark {
         z: { value: maybeZ(options), optional: true }
       },
       options,
-      defaults7
+      defaults8
     );
     this.z = z;
     this.curve = maybeCurveAuto(curve, tension);
@@ -39723,7 +40139,7 @@ Mark.prototype.plot = function({ marks: marks2 = [], ...options } = {}) {
   return plot({ ...options, marks: [...marks2, this] });
 };
 
-// src/Components/plotCharts.jsx
+// src/Components/plotCharts.js
 function loadLineChart(priceHistoryImmutable, chartType, timespan, setLoading, increaseTimeSpan) {
   const root2 = document.getElementById("graph-root");
   while (root2.firstElementChild) {
@@ -39760,7 +40176,7 @@ function loadLineChart(priceHistoryImmutable, chartType, timespan, setLoading, i
   } else if (chartType === "volume") {
     plot2 = volumeChart(priceHistoryDateRange, startingDate, timespan);
   }
-  plot2.classList.add("absolute", "inset-0", "size-full");
+  plot2.classList.add("absolute", "top-0", "inset-0", "size-full");
   root2.append(plot2);
   setLoading(false);
 }
@@ -39774,9 +40190,13 @@ function priceChart(priceHistory, startDate) {
   const min4 = getMin(priceHistory, "Low");
   const max3 = getMax(priceHistory, "High");
   const range3 = Math.abs(max3 - min4);
-  const offset2 = range3 === 0 ? 1 : range3 / 20;
+  let offset2 = range3 === 0 ? 1 : range3 / 20;
+  if (range3 < 10) offset2 = 1;
+  if (min4 - offset2 < 0) offset2 = min4;
   return plot({
-    marginLeft: 50,
+    marginLeft: 40,
+    marginRight: 15,
+    marginBottom: 37,
     grid: true,
     color: {
       domain: [-1, 0, 1],
@@ -39799,7 +40219,7 @@ function priceChart(priceHistory, startDate) {
     marks: [
       //Have to check if max is less than min becuase theres weird date with items like pure essence
       ruleY([(max3 > min4 ? min4 : max3) - offset2]),
-      ruleY([range3 < 2 ? max3 + 1 : max3], {
+      ruleY([range3 < 10 ? max3 + 2 : max3], {
         opacity: 0
       }),
       ruleX([startDate], {
@@ -39822,11 +40242,18 @@ function priceChart(priceHistory, startDate) {
       //Candlestick price moves line
       ruleX(priceHistory, {
         x: "Date",
-        y1: (d) => d.Low ? d.Low : d.averagePrice,
-        y2: (d) => d.High ? d.High : d.averagePrice,
+        y1: "Low",
+        y2: "High",
         stroke: (d) => Math.sign(d.averagePrice - d.previousPrice),
-        strokeWidth: 2,
-        marker: "dot"
+        strokeWidth: 1.5,
+        strokeLinecap: "round",
+        marker: "none"
+      }),
+      dot(priceHistory, {
+        x: "Date",
+        y: "averagePrice",
+        fill: (d) => Math.sign(d.averagePrice - d.previousPrice),
+        r: 2.5
       }),
       // Plot.lineY(priceHistory, {
       //   x: 'Date',
@@ -39836,15 +40263,18 @@ function priceChart(priceHistory, startDate) {
       // }),
       tip(
         priceHistory,
-        pointer({
+        pointerX({
           x: "Date",
           y1: (d) => d.Low ? d.Low : d.averagePrice,
           y2: (d) => d.High ? d.High : d.averagePrice,
           title: (d) => `Date  ${formatDate(d.Date)}
-${d.High && d.Low ? `High  ${formatPrice(d.High)}
-Low   ${formatPrice(d.Low)}` : `Price  ${formatPrice(d.averagePrice)}`}`,
+${`Price  ${formatPrice(d.averagePrice)}`}${d.High && d.Low ? `
+High  ${formatPrice(d.High)}
+Low   ${formatPrice(d.Low)}` : ""}`,
           fill: "#665b47",
-          fontSize: 14
+          fontSize: 14,
+          stroke: "#333333",
+          strokeWidth: 1.5
         })
       )
     ]
@@ -39861,13 +40291,13 @@ function volumeChart(priceHistory, startDate, timepsan) {
   switch (timepsan) {
     default:
     case "1month":
-      labelOffset = 11;
-      break;
-    case "3months":
       labelOffset = 13;
       break;
+    case "3months":
+      labelOffset = 4;
+      break;
     case "6months":
-      labelOffset = 15;
+      labelOffset = 2;
       break;
     case "1year":
       labelOffset = 1;
@@ -39875,6 +40305,8 @@ function volumeChart(priceHistory, startDate, timepsan) {
   }
   return plot({
     grid: true,
+    marginRight: 15,
+    marginBottom: 37,
     style: {
       fontFamily: "inherit",
       fontSize: 12
@@ -39902,29 +40334,30 @@ function volumeChart(priceHistory, startDate, timepsan) {
       rectY(priceHistory, {
         x: "Date",
         y1: 0,
-        y2: "Low Price Volume",
+        y2: "lowPriceVolume",
         fill: "#d97706"
       }),
       //High Price Volume
       rectY(priceHistory, {
         x: "Date",
-        y1: "Low Price Volume",
-        y2: "High Price Volume",
+        y1: "lowPriceVolume",
+        y2: "highPriceVolume",
         fill: "#0ea5e9"
       }),
       tip(
         priceHistory,
         pointerX({
           x: "Date",
-          y: "High Price Volume",
+          y1: 0,
+          y2: (d) => d.highPriceVolume > d.lowPriceVolume ? d.highPriceVolume : d.lowPriceVolume,
           fill: "#665b47",
           fontSize: 14,
-          title: (d) => (
-            //Weird string literal to get the spacing correct
-            `Date${d["High Price Volume"] > 1e3 || d["Low Price Volume"] > 1e3 ? "              " : "          "}${formatDate(d.Date)}
-High Price Volume  ${formatVolume(d["High Price Volume"])}
-Low Price Volume   ${formatVolume(d["Low Price Volume"])}`
-          )
+          title: (d) => `Date${formatDate(d.Date)}
+Total Volume  ${formatVolume(d.totalVolume)}${d.highPriceVolume > 0 && d.lowPriceVolume > 0 ? `
+High Price Volume  ${formatVolume(d.highPriceVolume)}
+Low Price Volume  ${formatVolume(d.lowPriceVolume)}` : ""}`,
+          stroke: "#333333",
+          strokeWidth: 1.5
         })
       )
     ]
@@ -39946,24 +40379,34 @@ function getMax(array2, key) {
 }
 
 // API Calls/priceHistory.js
-async function loadPriceHistory(itemId, setPriceHistory) {
+async function loadPriceHistory(itemId, utilizedTimeSeriesSearch, setPriceHistory) {
   try {
     const resp = await fetch(`https://prices.runescape.wiki/api/v1/osrs/timeseries?timestep=24h&id=${itemId}`);
     const data = await resp.json();
     let previousEntry = null;
     const history = data.data.map((entry) => {
+      const averagePrice = getAveragePrice(entry);
       const item = {
+        timestamp: entry.timestamp,
         Date: new Date(entry.timestamp * 1e3),
-        High: entry.avgHighPrice,
-        Low: entry.avgLowPrice,
-        averagePrice: (entry.avgHighPrice + entry.avgLowPrice) / 2,
-        previousPrice: previousEntry ? (previousEntry.avgHighPrice + previousEntry.avgLowPrice) / 2 : (entry.avgHighPrice + entry.avgLowPrice) / 2,
-        "High Price Volume": entry.highPriceVolume,
-        "Low Price Volume": entry.lowPriceVolume
+        //Fixing weirdness with API
+        High: entry.avgHighPrice > entry.avgLowPrice ? entry.avgHighPrice : entry.avgLowPrice,
+        Low: entry.avgLowPrice < entry.avgHighPrice ? entry.avgLowPrice : entry.avgHighPrice,
+        averagePrice,
+        previousPrice: previousEntry ? getAveragePrice(previousEntry) : averagePrice,
+        highPriceVolume: entry.highPriceVolume,
+        lowPriceVolume: entry.lowPriceVolume,
+        totalVolume: entry.highPriceVolume + entry.lowPriceVolume
       };
       previousEntry = entry;
       return item;
     });
+    if (!utilizedTimeSeriesSearch) {
+      if (!LATEST_BULK_DATA_TIMESTAMP) console.error(LATEST_BULK_DATA_TIMESTAMP, "latest bulk data timestamp is not defined");
+      if (history[history.length - 1].timestamp > LATEST_BULK_DATA_TIMESTAMP) {
+        history.pop();
+      }
+    }
     setPriceHistory(history);
   } catch (e) {
     console.log(e);
@@ -39983,7 +40426,7 @@ function Graph() {
     }
     setDisabledTimespans([]);
     setLoading(true);
-    loadPriceHistory(selectedItem.id, (data) => {
+    loadPriceHistory(selectedItem.id, selectedItem.utilizedTimeSeriesSearch, (data) => {
       setPriceHistory(data);
     });
   }, [selectedItem]);
@@ -40013,157 +40456,140 @@ function Graph() {
       }
     });
   }, [priceHistory, activeGraph, timespan]);
-  return /* @__PURE__ */ import_react5.default.createElement("div", { className: "border-2 border-border size-full gap-1 flex flex-col" }, /* @__PURE__ */ import_react5.default.createElement("div", { className: "flex flex-row gap-1 items-center" }, /* @__PURE__ */ import_react5.default.createElement("img", { src: "https://oldschool.runescape.wiki/images/Grand_Exchange_icon.png?16321", className: "flex-shrink-0 object-contain h-6 no-blurry" }), /* @__PURE__ */ import_react5.default.createElement(Button, { onClick: () => changeGraph("prices"), active: activeGraph === "prices", small: true }, "Price Changes"), /* @__PURE__ */ import_react5.default.createElement(Button, { onClick: () => changeGraph("volume"), active: activeGraph === "volume", small: true }, "Volume Traded")), /* @__PURE__ */ import_react5.default.createElement("div", { className: "flex flex-row gap-1 items-center" }, /* @__PURE__ */ import_react5.default.createElement("img", { src: "https://oldschool.runescape.wiki/images/Speedrunning_shop_icon.png?b6c2f", className: "flex-shrink-0 object-contain h-6 no-blurry" }), /* @__PURE__ */ import_react5.default.createElement(Button, { onClick: () => setTimespan("1month"), active: timespan === "1month", small: true, disabled: disabledTimespans.includes("1month") }, "1 Month"), /* @__PURE__ */ import_react5.default.createElement(Button, { onClick: () => setTimespan("3months"), active: timespan === "3months", small: true, disabled: disabledTimespans.includes("3months") }, "3 Months"), /* @__PURE__ */ import_react5.default.createElement(Button, { onClick: () => setTimespan("6months"), active: timespan === "6months", small: true, disabled: disabledTimespans.includes("6months") }, "6 Months"), /* @__PURE__ */ import_react5.default.createElement(Button, { onClick: () => setTimespan("1year"), active: timespan === "1year", small: true, disabled: disabledTimespans.includes("1year") }, "1 Year")), loading && /* @__PURE__ */ import_react5.default.createElement("div", { className: "size-full flex justify-center items-center" }, /* @__PURE__ */ import_react5.default.createElement(LoadingSpinner, { randomize: true })), /* @__PURE__ */ import_react5.default.createElement("div", { className: `size-full relative text-rs-shadow-small font-sans ${loading && "hidden"}`, id: "graph-root" }));
+  const graphDivRef = (0, import_react5.useRef)(null);
+  (0, import_react5.useEffect)(() => {
+    if (graphDivRef == null) return;
+    const observer = new ResizeObserver((entries) => {
+      const container = entries[0]?.target;
+      if (container == null) return;
+      const width = graphDivRef.current.clientWidth;
+      const height = 407 / 640 * width;
+      graphDivRef.current.style.height = height + "px";
+    });
+    observer.observe(graphDivRef.current);
+    return () => observer.disconnect();
+  }, []);
+  return /* @__PURE__ */ import_react5.default.createElement("div", { className: "size-full max-h-full gap-0.5 sm:gap-1 flex flex-col overflow-auto" }, /* @__PURE__ */ import_react5.default.createElement("div", { className: "flex flex-row gap-0.5 sm:gap-1 items-center" }, /* @__PURE__ */ import_react5.default.createElement("img", { src: "https://oldschool.runescape.wiki/images/Grand_Exchange_icon.png?16321", className: "flex-shrink-0 object-contain h-4 sm:h-5 md:h-[1.5rem] lg:h-6 no-blurry" }), /* @__PURE__ */ import_react5.default.createElement(Button, { onClick: () => changeGraph("prices"), active: activeGraph === "prices", small: true }, "Price Changes"), /* @__PURE__ */ import_react5.default.createElement(Button, { onClick: () => changeGraph("volume"), active: activeGraph === "volume", small: true }, "Volume Traded")), /* @__PURE__ */ import_react5.default.createElement("div", { className: "flex flex-row gap-0.5 sm:gap-1 items-center" }, /* @__PURE__ */ import_react5.default.createElement("img", { src: "https://oldschool.runescape.wiki/images/Speedrunning_shop_icon.png?b6c2f", className: "flex-shrink-0 object-contain h-4 sm:h-5 md:h-[1.5rem] lg:h-6 no-blurry" }), /* @__PURE__ */ import_react5.default.createElement(Button, { onClick: () => setTimespan("1month"), active: timespan === "1month", small: true, disabled: disabledTimespans.includes("1month") }, "1 Month"), /* @__PURE__ */ import_react5.default.createElement(Button, { onClick: () => setTimespan("3months"), active: timespan === "3months", small: true, disabled: disabledTimespans.includes("3months") }, "3 Months"), /* @__PURE__ */ import_react5.default.createElement(Button, { onClick: () => setTimespan("6months"), active: timespan === "6months", small: true, disabled: disabledTimespans.includes("6months") }, "6 Months"), /* @__PURE__ */ import_react5.default.createElement(Button, { onClick: () => setTimespan("1year"), active: timespan === "1year", small: true, disabled: disabledTimespans.includes("1year") }, "1 Year")), loading && /* @__PURE__ */ import_react5.default.createElement("div", { className: "size-full flex justify-center items-center" }, /* @__PURE__ */ import_react5.default.createElement(LoadingSpinner, { randomize: true })), /* @__PURE__ */ import_react5.default.createElement("div", { ref: graphDivRef, className: `w-full pt-1 relative text-rs-shadow-small font-sans ${loading && "hidden"}`, id: "graph-root" }));
+}
+
+// src/Components/ToolTip.jsx
+var import_react6 = __toESM(require_react());
+function ToolTip({ offset: offset2 = null, ...props }) {
+  return /* @__PURE__ */ import_react6.default.createElement(
+    "div",
+    {
+      className: `absolute z-10 text-base shadow-md text-rs-shadow-small hidden sm:group-hover:block py-0.5 px-1.5 whitespace-nowrap bg-rs-medium rounded-sm ${offset2 ? offset2 : "top-1 right-10"}`,
+      ...props
+    }
+  );
 }
 
 // src/Components/ItemInfo.jsx
 function ItemInfo() {
-  const { selectedItem } = (0, import_react6.useContext)(appContext);
-  if (selectedItem == null) return /* @__PURE__ */ import_react6.default.createElement("div", { className: "flex justify-center items-center w-full" }, /* @__PURE__ */ import_react6.default.createElement("div", { className: "text-center w-full" }, "Please select an item"));
+  const { selectedItem } = (0, import_react7.useContext)(appContext);
+  if (selectedItem == null) return /* @__PURE__ */ import_react7.default.createElement("div", { className: "size-full relative" }, /* @__PURE__ */ import_react7.default.createElement("img", { src: "/assets/gnome_child.png", className: "size-full object-contain no-blurry opacity-30 border-l-2 border-border" }), /* @__PURE__ */ import_react7.default.createElement("span", { className: "absolute top-[40%] right-[20%] text-4xl opacity-60" }, "stonk"));
   const formattedPrice = formatGP(selectedItem.latestPrice);
-  return /* @__PURE__ */ import_react6.default.createElement("div", { className: "flex flex-col flex-grow items-center border-2 border-border" }, /* @__PURE__ */ import_react6.default.createElement("div", { className: "flex flex-row w-full justify-between items-center px-2 py-1 border-2 border-border" }, /* @__PURE__ */ import_react6.default.createElement("div", { className: "flex flex-row gap-3 justify-center items-center" }, /* @__PURE__ */ import_react6.default.createElement("div", { className: "flex-shrink-0 w-11 h-11" }, /* @__PURE__ */ import_react6.default.createElement("img", { src: `https://oldschool.runescape.wiki/images/${selectedItem.icon}`, alt: "", className: "no-blurry object-contain size-full" })), /* @__PURE__ */ import_react6.default.createElement("span", { className: "text-[2.75rem] text-ellipsis" }, selectedItem.name)), /* @__PURE__ */ import_react6.default.createElement("div", { className: "flex flex-row gap-3 justify-center items-center h-12" }, /* @__PURE__ */ import_react6.default.createElement("button", { className: "rounded-full bg-border w-9 h-9 flex justify-center items-center" }, /* @__PURE__ */ import_react6.default.createElement("span", { className: "text-green-500" }, "+")), /* @__PURE__ */ import_react6.default.createElement("a", { href: `https://oldschool.runescape.wiki/w/${selectedItem.wikiLink}`, target: "_blank", className: "cursor-alias w-12 h-full" }, /* @__PURE__ */ import_react6.default.createElement("img", { src: "https://oldschool.runescape.wiki/images/Wiki@2x.png", alt: "osrs wiki", className: "object-contain h-full" })))), /* @__PURE__ */ import_react6.default.createElement("div", { className: "flex flex-row w-full justify-center items-center gap-4 border-2 border-border" }, /* @__PURE__ */ import_react6.default.createElement("span", { className: "text-xl" }, selectedItem.examine), /* @__PURE__ */ import_react6.default.createElement("div", { className: "h-full border-l-2 border-border" }), /* @__PURE__ */ import_react6.default.createElement("div", { className: "flex flex-row text-xl gap-2" }, /* @__PURE__ */ import_react6.default.createElement("span", { className: formattedPrice.text }, formattedPrice.gp), selectedItem.priceChange >= 0 ? /* @__PURE__ */ import_react6.default.createElement("span", { className: "text-green-600" }, "+", selectedItem.priceChange.toFixed(2), "%") : /* @__PURE__ */ import_react6.default.createElement("span", { className: "text-red-600" }, selectedItem.priceChange.toFixed(2), "%"))), /* @__PURE__ */ import_react6.default.createElement(Graph, null));
+  return /* @__PURE__ */ import_react7.default.createElement("div", { className: "text-rs-shadow-small sm:text-rs-shadow max-h-full flex flex-col flex-grow items-center overflow-auto" }, /* @__PURE__ */ import_react7.default.createElement("div", { className: "flex flex-row w-full px-1 sm:px-4 sm:py-1 justify-between items-center" }, /* @__PURE__ */ import_react7.default.createElement("div", { className: "flex flex-row gap-1.5 sm:gap-3 justify-center items-center" }, /* @__PURE__ */ import_react7.default.createElement("div", { className: "flex-shrink-0 size-7 sm:size-9 md:size-10 lg:size-11" }, /* @__PURE__ */ import_react7.default.createElement("img", { src: `https://oldschool.runescape.wiki/images/${selectedItem.icon}`, alt: "", className: "no-blurry object-contain size-full" })), /* @__PURE__ */ import_react7.default.createElement("span", { className: "text-xl sm:text-3xl md:text-4xl lg:text-[2.75rem]" }, selectedItem.name)), /* @__PURE__ */ import_react7.default.createElement("div", { className: "flex flex-row gap-1 sm:gap-3 justify-center items-center h-12" }, /* @__PURE__ */ import_react7.default.createElement(AddRemoveButton, null), /* @__PURE__ */ import_react7.default.createElement("a", { href: `https://oldschool.runescape.wiki/w/${selectedItem.wikiLink}`, target: "_blank", className: "cursor-alias w-8 sm:w-12 h-full" }, /* @__PURE__ */ import_react7.default.createElement("img", { src: "https://oldschool.runescape.wiki/images/Wiki@2x.png", alt: "osrs wiki", className: "object-contain h-full" })))), /* @__PURE__ */ import_react7.default.createElement("div", { className: "px-1.5 sm:px-4 pb-1 w-full self-start text-sm sm:text-lg md:text-xl border-border border-b-2" }, selectedItem.examine), /* @__PURE__ */ import_react7.default.createElement("div", { className: "flex flex-row py-1 sm:py-1.5 flex-wrap w-full justify-center items-center gap-2 md:gap-4" }, /* @__PURE__ */ import_react7.default.createElement("div", { className: "relative group" }, /* @__PURE__ */ import_react7.default.createElement(
+    "img",
+    {
+      src: `https://oldschool.runescape.wiki/images/${selectedItem.members ? "Member_icon.png?1de0c" : "Free-to-play_icon.png?628ce"}`,
+      className: " h-3.5 sm:h-5 -mt-1 aspect-square object-contain no-blurry"
+    }
+  ), /* @__PURE__ */ import_react7.default.createElement(ToolTip, { offset: "-top-1.5 left-6" }, selectedItem.members ? "Members Item" : "Free-to-play Item")), /* @__PURE__ */ import_react7.default.createElement("div", { className: "hidden lg:block h-full border-l-2 border-border" }), /* @__PURE__ */ import_react7.default.createElement("div", { className: "flex flex-row text-xs sm:text-xl gap-2 relative group" }, /* @__PURE__ */ import_react7.default.createElement("span", { className: formattedPrice.text }, formattedPrice.gp), selectedItem.priceChange >= 0 ? /* @__PURE__ */ import_react7.default.createElement("span", { className: "text-green-600" }, "+", selectedItem.priceChange.toFixed(2), "%") : /* @__PURE__ */ import_react7.default.createElement("span", { className: "text-red-600" }, selectedItem.priceChange.toFixed(2), "%"), /* @__PURE__ */ import_react7.default.createElement(ToolTip, { offset: "top-0 -left-[8.5rem]" }, "24 Hour Price Change")), /* @__PURE__ */ import_react7.default.createElement("div", { className: "hidden lg:block h-full border-l-2 border-border" }), /* @__PURE__ */ import_react7.default.createElement("div", { className: "flex flex-row gap-2 justify-center items-center group relative" }, /* @__PURE__ */ import_react7.default.createElement(
+    "img",
+    {
+      src: "https://oldschool.runescape.wiki/images/High_Level_Alchemy.png?94664",
+      className: "h-3.5 sm:h-5 -mt-1 aspect-square object-contain no-blurry"
+    }
+  ), /* @__PURE__ */ import_react7.default.createElement("span", { className: "text-xs sm:text-xl" }, formatGP(selectedItem.highAlch).gp), /* @__PURE__ */ import_react7.default.createElement(ToolTip, { offset: "top-0 -left-[6.25rem]" }, "High Alch Price")), selectedItem.buyLimit && /* @__PURE__ */ import_react7.default.createElement(import_react7.default.Fragment, null, /* @__PURE__ */ import_react7.default.createElement("div", { className: "hidden lg:block h-full border-l-2 border-border" }), /* @__PURE__ */ import_react7.default.createElement("div", { className: "flex flex-row gap-2 justify-center items-center group relative" }, /* @__PURE__ */ import_react7.default.createElement(
+    "img",
+    {
+      src: "https://oldschool.runescape.wiki/images/Grand_Exchange_icon.png?16321",
+      className: " h-3 sm:h-[1.25rem] aspect-square object-contain no-blurry"
+    }
+  ), /* @__PURE__ */ import_react7.default.createElement("span", { className: "text-xs sm:text-xl" }, formatPrice(selectedItem.buyLimit)), /* @__PURE__ */ import_react7.default.createElement(ToolTip, { offset: "top-0 -left-[10rem]" }, "Grand Exchange Buy Limit")))), /* @__PURE__ */ import_react7.default.createElement(Graph, null));
 }
-
-// src/Components/ItemList.jsx
-var import_react7 = __toESM(require_react());
-function ItemList() {
-  const { currItems } = (0, import_react7.useContext)(appContext);
-  return /* @__PURE__ */ import_react7.default.createElement("div", { className: "flex flex-col max-w-[20rem] w-full max-h-full overflow-auto gap-1" }, currItems.slice(0, 99).map((item, ind) => /* @__PURE__ */ import_react7.default.createElement(Item, { key: ind, item })));
-}
-function Item({ item }) {
-  const { selectedItem, setSelectedItem } = (0, import_react7.useContext)(appContext);
-  const formattedPrice = formatGP(item.latestPrice);
+function AddRemoveButton() {
+  const { selectedItem, currCategory, refreshCategory } = (0, import_react7.useContext)(appContext);
+  const [isListItem, setIsListItem] = (0, import_react7.useState)(false);
+  (0, import_react7.useEffect)(() => {
+    if (selectedItem == null) return;
+    setIsListItem(selectedItem.isMyListItem);
+  }, [selectedItem]);
+  if (selectedItem == null) return /* @__PURE__ */ import_react7.default.createElement("div", { className: "flex justify-center items-center w-full" }, /* @__PURE__ */ import_react7.default.createElement("div", { className: "text-center w-full" }, "Please select an item"));
   return /* @__PURE__ */ import_react7.default.createElement(
     "button",
     {
-      className: `text-rs-shadow px-2 pt-1.5 pb-1 border-[2px]
-      ${selectedItem === item ? "border-rs-text bg-rs-dark" : "border-t-rs-border-light border-l-rs-border-light border-b-stone-800 border-r-stone-800 bg-rs-medium rounded-sm"}`,
-      onClick: () => setSelectedItem(item)
+      className: "rounded-full border-2 border-rs-border-light-active group relative bg-border size-6 sm:size-9 flex justify-center items-center",
+      onClick: () => {
+        const updateList = currCategory === "my-list" ? () => refreshCategory() : null;
+        if (isListItem) {
+          removeItemFromMyList(selectedItem, updateList);
+          setIsListItem(false);
+        } else {
+          addItemToMyList(selectedItem, updateList);
+          setIsListItem(true);
+        }
+      }
     },
-    /* @__PURE__ */ import_react7.default.createElement("div", { className: "flex flex-row items-center gap-2" }, /* @__PURE__ */ import_react7.default.createElement("div", { className: "flex-shrink-0 w-9 h-9" }, /* @__PURE__ */ import_react7.default.createElement("img", { src: `https://oldschool.runescape.wiki/images/${item.icon}`, alt: "", className: "no-blurry object-contain size-full" })), /* @__PURE__ */ import_react7.default.createElement("div", { className: "flex flex-col items-start" }, /* @__PURE__ */ import_react7.default.createElement("span", { className: "text-2xl text-start text-ellipsis whitespace-nowrap overflow-hidden w-[15rem]" }, item.name, " ", item.id, " ", item.lowQualityData && "poop"), /* @__PURE__ */ import_react7.default.createElement("div", { className: "flex flex-row text-lg gap-2" }, /* @__PURE__ */ import_react7.default.createElement("span", { className: formattedPrice.text }, formattedPrice.gp), item.priceChange >= 0 ? /* @__PURE__ */ import_react7.default.createElement("span", { className: "text-green-600" }, "+", item.priceChange.toFixed(2), "%") : /* @__PURE__ */ import_react7.default.createElement("span", { className: "text-red-600" }, item.priceChange.toFixed(2), "%"))))
+    /* @__PURE__ */ import_react7.default.createElement(ToolTip, null, isListItem ? "Remove from" : "Add to", " Watchlist"),
+    isListItem ? /* @__PURE__ */ import_react7.default.createElement("span", { className: "text-red-500 text-5xl pt-1" }, "-") : /* @__PURE__ */ import_react7.default.createElement("span", { className: "text-green-500 pt-0.5" }, "+")
   );
 }
 
-// API Calls/fetchItems.js
-var baseData = null;
-async function getBase() {
-  if (baseData != null) return baseData.slice();
-  try {
-    const respItems = await fetch("https://prices.runescape.wiki/api/v1/osrs/mapping");
-    const itemDetails = await respItems.json();
-    itemDetails.sort((a2, b) => a2.id - b.id);
-    const respLastRecordedPrices = await fetch("https://prices.runescape.wiki/api/v1/osrs/latest");
-    const jsonLastRecordedPrices = await respLastRecordedPrices.json();
-    const recordedPrices = Object.entries(jsonLastRecordedPrices.data);
-    const timestampDayOffset = 86400;
-    const maxFetches = 7;
-    let dailyPrices = [];
-    let lastTimestamp = null;
-    for (let i = 0; i < maxFetches; i++) {
-      const data = await fetch24HourPrices(lastTimestamp);
-      dailyPrices.push(data.prices);
-      lastTimestamp = data.timestamp - timestampDayOffset;
-    }
-    let items = [];
-    for (const item of itemDetails) {
-      const entryInRecordedPrices = recordedPrices.find((price) => parseInt(price[0]) === item.id);
-      if (!entryInRecordedPrices) {
-        continue;
-      }
-      let currentPriceData = null;
-      let previousPriceData = null;
-      let currentFoundAtIndex;
-      let lowQualityData = false;
-      for (let i = 0; i < dailyPrices.length; i++) {
-        const match = dailyPrices[i].find((price) => parseInt(price[0]) === item.id);
-        if (match) {
-          if (Object.values(match).some((val) => val == null)) continue;
-          currentFoundAtIndex = i;
-          currentPriceData = match[1];
-          break;
-        }
-      }
-      if (currentPriceData != null) {
-        for (let i = currentFoundAtIndex + 1; i < dailyPrices.length; i++) {
-          const match = dailyPrices[i].find((price) => parseInt(price[0]) === item.id);
-          if (match) {
-            if (Object.values(match).some((val) => val == null)) continue;
-            previousPriceData = match[1];
-            break;
-          }
-        }
-      }
-      if (!currentPriceData || !previousPriceData) {
-        lowQualityData = true;
-        const { current, previous } = await fetchItemCurrentAndPrevious(item.id);
-        if (!current || !previous) {
-          console.error("could not find a current and previous for", item.name);
-          continue;
-        }
-        currentPriceData = current;
-        previousPriceData = previous;
-      }
-      const currentPrice = (currentPriceData.avgHighPrice + currentPriceData.avgLowPrice) / 2;
-      const previousPrice = (previousPriceData.avgHighPrice + previousPriceData.avgLowPrice) / 2;
-      const priceChange = (currentPrice - previousPrice) / previousPrice * 100;
-      items.push({
-        priceChange,
-        id: item.id,
-        name: item.name,
-        examine: item.examine,
-        members: item.members,
-        icon: item.icon.replaceAll(" ", "_"),
-        wikiLink: item.icon.replaceAll(" ", "_").slice(0, item.icon.length - 4),
-        highAlch: item.highalch,
-        buyLimit: item.limit,
-        lowQualityData,
-        latestPrice: Math.round(currentPrice),
-        yesterdayPrice: Math.round(previousPrice),
-        latestVolumeTraded: currentPriceData.highPriceVolume + currentPriceData.lowPriceVolume,
-        previousVolumeTraded: previousPriceData.highPriceVolume + previousPriceData.lowPriceVolume
+// src/Components/ItemList.jsx
+var import_react8 = __toESM(require_react());
+function ItemList() {
+  const { currItems } = (0, import_react8.useContext)(appContext);
+  const [lastIndex, setLastIndex] = (0, import_react8.useState)(99);
+  const [showShadows, setShowShadows] = (0, import_react8.useState)({ top: false, bottom: false });
+  const scrollingDivRef = (0, import_react8.useRef)(null);
+  (0, import_react8.useEffect)(() => {
+    if (scrollingDivRef.current == null) return;
+    function onScroll(e) {
+      const scrollTop = e.target.scrollTop;
+      const scrollBottom = e.target.scrollHeight - (e.target.clientHeight + e.target.scrollTop);
+      setShowShadows({
+        top: scrollTop !== 0,
+        bottom: scrollBottom !== 0
       });
     }
-    baseData = items;
-    return baseData.slice();
-  } catch (e) {
-    console.error(e);
-    return { error: e };
-  }
+    onScroll({ target: scrollingDivRef.current });
+    scrollingDivRef.current.addEventListener("scroll", onScroll);
+    return () => {
+      if (scrollingDivRef.current != null) scrollingDivRef.current.removeEventListener("scroll", onScroll);
+    };
+  }, []);
+  (0, import_react8.useEffect)(() => {
+    if (scrollingDivRef.current != null) scrollingDivRef.current.scrollTop = 0;
+    setLastIndex(99);
+  }, [currItems]);
+  if (currItems == null || currItems.length == 0) return /* @__PURE__ */ import_react8.default.createElement("div", { className: "text-2xl sm:text-3xl w-full h-[80%] flex justify-center items-center" }, "Nothing to see here...");
+  return /* @__PURE__ */ import_react8.default.createElement("div", { className: "relative overflow-auto w-full max-h-full" }, /* @__PURE__ */ import_react8.default.createElement("div", { className: `${!showShadows.top && "hidden"} absolute top-0 left-0 w-full h-6 bg-gradient-to-b from-stone-900/35 to-transparent border-t-2 border-neutral-800 pointer-events-none` }), /* @__PURE__ */ import_react8.default.createElement("div", { className: `${!showShadows.bottom && "hidden"} absolute bottom-0 left-0 w-full h-6 bg-gradient-to-t from-stone-900/35 to-transparent border-b-2 border-neutral-800 pointer-events-none` }), /* @__PURE__ */ import_react8.default.createElement("div", { ref: scrollingDivRef, className: "flex flex-col h-full w-full overflow-auto gap-0.5 sm:gap-1 rs-inner-shadow" }, currItems.slice(0, lastIndex).map((item, ind) => /* @__PURE__ */ import_react8.default.createElement(Item, { key: ind, item })), currItems.length > lastIndex && /* @__PURE__ */ import_react8.default.createElement(
+    "button",
+    {
+      className: "text-rs-shadow-small sm:text-rs-shadow text-sm sm:text-xl md:text-2xl lg:text-3xl px-2 pt-1 border-[2px] rounded-sm border-t-rs-border-light border-l-rs-border-light border-b-stone-800 border-r-stone-800 bg-rs-medium",
+      onClick: () => {
+        const nextIndex = lastIndex + 100;
+        if (nextIndex < currItems.length) setLastIndex(nextIndex);
+        else setLastIndex(currItems.length);
+      }
+    },
+    "Load More Items..."
+  )));
 }
-async function fetch24HourPrices(timestamp) {
-  const resp = await fetch(`https://prices.runescape.wiki/api/v1/osrs/24h${timestamp ? `?timestamp=${timestamp}` : ""}`);
-  const data = await resp.json();
-  const prices = Object.entries(data.data);
-  prices.sort((a2, b) => a2[0] - b[0]);
-  return {
-    prices,
-    timestamp: data.timestamp
-  };
-}
-async function fetchItemCurrentAndPrevious(itemId) {
-  const resp = await fetch(`https://prices.runescape.wiki/api/v1/osrs/timeseries?timestep=24h&id=${itemId}`);
-  const data = await resp.json();
-  const priceHistory = data.data;
-  let latestPriceData;
-  let previousPriceData;
-  let latestFoundAtIndex;
-  for (let i = priceHistory.length - 1; i >= 0; i--) {
-    if (Object.values(priceHistory[i]).every((val) => val != null)) {
-      latestPriceData = priceHistory[i];
-      latestFoundAtIndex = i;
-      break;
-    }
-  }
-  for (let i = latestFoundAtIndex - 1; i >= 0; i--) {
-    if (Object.values(priceHistory[i]).every((val) => val != null)) {
-      previousPriceData = priceHistory[i];
-      break;
-    }
-  }
-  return {
-    current: latestPriceData,
-    previous: previousPriceData
-  };
+function Item({ item }) {
+  const { selectedItem, setSelectedItem } = (0, import_react8.useContext)(appContext);
+  const formattedPrice = formatGP(item.latestPrice);
+  return /* @__PURE__ */ import_react8.default.createElement(
+    "button",
+    {
+      className: `text-rs-shadow-small sm:text-rs-shadow px-1 sm:px-2 py-1 border-[2px] rounded-sm
+      ${selectedItem === item ? "bg-rs-dark border-t-rs-border-light-active border-l-rs-border-light-active border-b-rs-border-dark-active border-r-rs-border-dark-active" : "border-t-rs-border-light border-l-rs-border-light border-b-stone-800 border-r-stone-800 bg-rs-medium"}`,
+      onClick: () => setSelectedItem(item)
+    },
+    /* @__PURE__ */ import_react8.default.createElement("div", { className: "flex flex-row w-full items-center gap-1 sm:gap-2" }, /* @__PURE__ */ import_react8.default.createElement("div", { className: "flex-shrink-0 aspect-square size-[1.2rem] sm:size-7 md:size-8 lg:size-9" }, /* @__PURE__ */ import_react8.default.createElement("img", { src: `https://oldschool.runescape.wiki/images/${item.icon}`, alt: "", className: "no-blurry object-contain size-full" })), /* @__PURE__ */ import_react8.default.createElement("div", { className: "truncate text-start -mt-4 sm:-mt-2 md:-mt-1" }, /* @__PURE__ */ import_react8.default.createElement("span", { className: `text-xs sm:text-base md:text-xl xl:text-2xl` }, item.name), /* @__PURE__ */ import_react8.default.createElement("div", { className: "flex flex-row text-[0.6rem]/[1] sm:text-sm md:text-base lg:text-lg gap-1 sm:gap-2" }, /* @__PURE__ */ import_react8.default.createElement("span", { className: formattedPrice.text }, formattedPrice.gp), item.priceChange >= 0 ? /* @__PURE__ */ import_react8.default.createElement("span", { className: "text-green-600 pr-1" }, "+", item.priceChange.toFixed(2), "%") : /* @__PURE__ */ import_react8.default.createElement("span", { className: "text-red-600 pr-1" }, item.priceChange.toFixed(2), "%"))))
+  );
 }
 
 // API Calls/getCategories.js
@@ -40175,7 +40601,7 @@ async function loadRises(updateFunction) {
     return;
   }
   const mapped = await getBase();
-  const priceRises = mapped.filter((item) => item.latestVolumeTraded > minimumVolume && item.previousVolumeTraded > minimumVolume).sort((a2, b) => {
+  const priceRises = mapped.filter((item) => !item.utilizedTimeSeriesSearch && item.latestVolumeTraded > minimumVolume && item.previousVolumeTraded > minimumVolume).sort((a2, b) => {
     return b.priceChange - a2.priceChange;
   });
   rises = priceRises;
@@ -40188,7 +40614,7 @@ async function loadFalls(updateFunction) {
     return;
   }
   const mapped = await getBase();
-  const priceFalls = mapped.filter((item) => item.latestVolumeTraded > minimumVolume && item.previousVolumeTraded > minimumVolume).sort((a2, b) => {
+  const priceFalls = mapped.filter((item) => !item.utilizedTimeSeriesSearch && item.latestVolumeTraded > minimumVolume && item.previousVolumeTraded > minimumVolume).sort((a2, b) => {
     return a2.priceChange - b.priceChange;
   });
   falls = priceFalls;
@@ -40221,15 +40647,131 @@ async function loadMostTraded(updateFunction) {
   updateFunction(mostTraded);
 }
 
+// src/Components/SearchBox.jsx
+var import_react9 = __toESM(require_react());
+function SearchBox() {
+  const { loadSearchResults, queryState } = (0, import_react9.useContext)(appContext);
+  const [currQuery, setCurrQuery] = queryState;
+  const inputRef = (0, import_react9.useRef)(null);
+  (0, import_react9.useEffect)(() => {
+    if (currQuery != null) loadSearchResults(currQuery);
+    if (inputRef.current != null) {
+      inputRef.current.value = currQuery;
+      inputRef.current.focus();
+    }
+  }, []);
+  (0, import_react9.useEffect)(() => {
+    if (inputRef.current == null) return;
+    function onSearch(e) {
+      if (e.key !== "Enter") return;
+      setCurrQuery(inputRef.current.value);
+      loadSearchResults(inputRef.current.value);
+    }
+    inputRef.current.addEventListener("keydown", onSearch);
+    return () => {
+      if (inputRef.current == null) return;
+      inputRef.current.removeEventListener("keydown", onSearch);
+    };
+  }, [inputRef]);
+  return /* @__PURE__ */ import_react9.default.createElement("div", { className: "w-full max-h-full overflow-auto h-12 sm:h-14 flex-shrink-0" }, /* @__PURE__ */ import_react9.default.createElement(
+    "input",
+    {
+      ref: inputRef,
+      type: "text",
+      className: "text-black size-full px-2 bg-stone-300 rounded-sm\n          text-base sm:text-3xl",
+      placeholder: "Search..."
+    }
+  ));
+}
+
+// API Calls/search.js
+async function getSearchResults(query, setItems) {
+  if (!query) return;
+  const items = await getBase();
+  const searchStr = query.toLowerCase();
+  const results = items.filter((item) => item.name.toLowerCase().includes(searchStr));
+  console.log(results);
+  setItems(results);
+}
+
+// src/Components/IntroPages.jsx
+var import_react10 = __toESM(require_react());
+function IntroPage({ categoryPicked, setCategoryPicked }) {
+  return /* @__PURE__ */ import_react10.default.createElement("div", { className: "flex flex-col items-center justify-start gap-12 sm:gap-16 p-1 pt-10 sm:pt-14 overflow-auto size-full" }, /* @__PURE__ */ import_react10.default.createElement("div", { className: " w-full h-[7.5rem] sm:h-[10rem] xl:h-[12rem]" }, /* @__PURE__ */ import_react10.default.createElement(
+    "img",
+    {
+      src: "https://oldschool.runescape.wiki/images/Old_School_RuneScape_logo.png?1d864&20181104160057",
+      alt: "Old School Runescape",
+      className: "object-contain h-full w-auto aspect-auto mx-auto"
+    }
+  )), /* @__PURE__ */ import_react10.default.createElement("div", { className: "flex flex-col gap-4 sm:gap-6 justify-center items-center" }, categoryPicked ? /* @__PURE__ */ import_react10.default.createElement("div", { className: "text-3xl sm:text-4xl pt-24" }, /* @__PURE__ */ import_react10.default.createElement(LoadingSpinner, { randomize: true })) : /* @__PURE__ */ import_react10.default.createElement(import_react10.default.Fragment, null, /* @__PURE__ */ import_react10.default.createElement("div", { className: "text-4xl sm:text-5xl underline decoration-2" }, "Select a Category"), /* @__PURE__ */ import_react10.default.createElement("div", { className: "flex flex-row flex-wrap sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-1 w-full px-4 sm:px-12 items-center justify-evenly text-base sm:text-xl xl:text-2xl" }, /* @__PURE__ */ import_react10.default.createElement(Button, { large: true, onClick: () => setCategoryPicked("search") }, /* @__PURE__ */ import_react10.default.createElement(
+    IconAndText,
+    {
+      iconSrc: "https://runescape.wiki/images/Magnifying_glass.png?51c4f",
+      text: "Search"
+    }
+  )), /* @__PURE__ */ import_react10.default.createElement(Button, { large: true, onClick: () => setCategoryPicked("my-list") }, /* @__PURE__ */ import_react10.default.createElement(
+    IconAndText,
+    {
+      iconSrc: "https://oldschool.runescape.wiki/images/List_of_elders.png?30594",
+      text: "My Watchlist"
+    }
+  )), /* @__PURE__ */ import_react10.default.createElement(Button, { large: true, onClick: () => setCategoryPicked("rises") }, /* @__PURE__ */ import_react10.default.createElement(
+    IconAndText,
+    {
+      iconSrc: "https://www.runescape.com/img/rsp777/grand_exchange/positive.gif",
+      text: "Price Rises"
+    }
+  )), /* @__PURE__ */ import_react10.default.createElement(Button, { large: true, onClick: () => setCategoryPicked("falls") }, /* @__PURE__ */ import_react10.default.createElement(
+    IconAndText,
+    {
+      iconSrc: "https://www.runescape.com/img/rsp777/grand_exchange/negative.gif",
+      text: "Price Falls"
+    }
+  )), /* @__PURE__ */ import_react10.default.createElement(Button, { large: true, onClick: () => setCategoryPicked("most-valuable") }, /* @__PURE__ */ import_react10.default.createElement(
+    IconAndText,
+    {
+      iconSrc: "https://oldschool.runescape.wiki/images/Bank_icon.png?b3b57",
+      text: "Most Valuable Trades"
+    }
+  )), /* @__PURE__ */ import_react10.default.createElement(Button, { large: true, onClick: () => setCategoryPicked("most-traded") }, /* @__PURE__ */ import_react10.default.createElement(
+    IconAndText,
+    {
+      iconSrc: "https://oldschool.runescape.wiki/images/Stats_icon.png?1b467",
+      text: "Most Traded"
+    }
+  ))))));
+}
+
 // src/StockApp.jsx
-var appContext = import_react8.default.createContext(null);
+var appContext = import_react11.default.createContext(null);
 function StockApp() {
-  const [selectedItem, setSelectedItem] = (0, import_react8.useState)(null);
-  const [loading, setLoading] = (0, import_react8.useState)(true);
-  const [currItems, setItems] = (0, import_react8.useState)(null);
-  const [currCategory, setCategory] = (0, import_react8.useState)("rises");
-  function updateCategory(updatedCategory) {
-    if (currCategory === updatedCategory) return;
+  const [baseDataLoadCalled, setBaseDataLoadCalled] = (0, import_react11.useState)(false);
+  const [baseDataLoaded, setBaseDataLoaded] = (0, import_react11.useState)(false);
+  const [categoryPicked, setCategoryPicked] = (0, import_react11.useState)(null);
+  (0, import_react11.useEffect)(() => {
+    if (baseDataLoadCalled) return;
+    setBaseDataLoadCalled(true);
+    initializeData(() => {
+      setBaseDataLoaded(true);
+    });
+  }, []);
+  (0, import_react11.useEffect)(() => {
+    if (baseDataLoaded && categoryPicked) {
+      updateCategory(categoryPicked);
+      return;
+    }
+  }, [categoryPicked, baseDataLoaded]);
+  const [selectedItem, setSelectedItem] = (0, import_react11.useState)(null);
+  const [loading, setLoading] = (0, import_react11.useState)(false);
+  const [currItems, setItems] = (0, import_react11.useState)(null);
+  const [currCategory, setCategory] = (0, import_react11.useState)(null);
+  const queryState = (0, import_react11.useState)(null);
+  function refreshCategory() {
+    updateCategory(currCategory, true);
+  }
+  function updateCategory(updatedCategory, forceUpdate = false) {
+    if (!forceUpdate && currCategory === updatedCategory) return;
     setLoading(true);
     setSelectedItem(null);
     setCategory(updatedCategory);
@@ -40237,8 +40779,12 @@ function StockApp() {
     else if (updatedCategory === "falls") loadFalls(loadItems);
     else if (updatedCategory === "most-valuable") loadMostValuable(loadItems);
     else if (updatedCategory === "most-traded") loadMostTraded(loadItems);
-    else if (updatedCategory === "my-list") setItems({ error: "my-list not implemented" });
-    else {
+    else if (updatedCategory === "my-list") getMyList(loadItems);
+    else if (updatedCategory === "search") {
+      setItems(null);
+      setSelectedItem(null);
+      setLoading(false);
+    } else {
       console.error("updating category to invalid category");
     }
   }
@@ -40247,28 +40793,41 @@ function StockApp() {
     setSelectedItem(items[0]);
     setLoading(false);
   }
-  (0, import_react8.useEffect)(() => {
-    loadRises(loadItems);
-  }, []);
-  let content = /* @__PURE__ */ import_react8.default.createElement(MainSection, null);
-  if (loading) content = /* @__PURE__ */ import_react8.default.createElement("div", { className: "size-full flex items-center justify-center" }, /* @__PURE__ */ import_react8.default.createElement(LoadingSpinner, null));
+  function loadSearchResults(query) {
+    setSelectedItem(null);
+    getSearchResults(query, setItems);
+  }
+  let content = /* @__PURE__ */ import_react11.default.createElement(MainSection, null);
+  if (!baseDataLoaded || !categoryPicked) content = /* @__PURE__ */ import_react11.default.createElement(IntroPage, { categoryPicked, setCategoryPicked });
+  if (loading) content = /* @__PURE__ */ import_react11.default.createElement("div", { className: "size-full flex items-center justify-center" }, /* @__PURE__ */ import_react11.default.createElement(LoadingSpinner, null));
   if (currItems?.error) content = "error!";
-  return /* @__PURE__ */ import_react8.default.createElement("div", { className: "text-3xl max-h-screen h-screen w-screen overflow-auto flex flex-col items-center" }, /* @__PURE__ */ import_react8.default.createElement(RollingText, { className: "text-4xl h1 border-b-2 border-border", text: "OLD SCHOOL RUNESCAPE GRAND EXCHANGE TRACKER -" }), /* @__PURE__ */ import_react8.default.createElement("div", { className: "flex flex-row size-full overflow-auto" }, /* @__PURE__ */ import_react8.default.createElement(RollingTextVertical, { flipped: true, className: "text-4xl", text: "IDK WHAT TO PUT BUT HERE WE GO -" }), /* @__PURE__ */ import_react8.default.createElement(appContext.Provider, { value: {
+  return /* @__PURE__ */ import_react11.default.createElement("div", { className: "text-3xl max-h-screen h-screen w-screen overflow-auto flex flex-col items-center" }, /* @__PURE__ */ import_react11.default.createElement(RollingLogo, { className: "border-b-2 border-border", toRight: true }), /* @__PURE__ */ import_react11.default.createElement("div", { className: "flex flex-row size-full overflow-auto" }, /* @__PURE__ */ import_react11.default.createElement(RollingIconsVertical, { flipped: true }), /* @__PURE__ */ import_react11.default.createElement(appContext.Provider, { value: {
     currItems,
     currCategory,
     selectedItem,
     updateCategory,
-    setSelectedItem
-  } }, content), /* @__PURE__ */ import_react8.default.createElement(RollingTextVertical, { className: "text-4xl", text: "WHEEEEEEEEEEEEEE -" })), /* @__PURE__ */ import_react8.default.createElement(RollingText, { className: "text-4xl border-t-2 border-border", text: "GOOD DESIGN BY ME -", toRight: true }));
+    refreshCategory,
+    setSelectedItem,
+    loadSearchResults,
+    queryState
+  } }, content), /* @__PURE__ */ import_react11.default.createElement(RollingIconsVertical, null)), /* @__PURE__ */ import_react11.default.createElement(RollingWatchList, { className: "border-t-2 border-border" }));
 }
 function MainSection() {
-  return /* @__PURE__ */ import_react8.default.createElement("div", { className: "flex flex-col items-center overflow-auto size-full text-3xl" }, /* @__PURE__ */ import_react8.default.createElement(Categories, null), /* @__PURE__ */ import_react8.default.createElement("div", { className: "flex flew-row w-full overflow-auto max-h-full h-full" }, /* @__PURE__ */ import_react8.default.createElement(ItemList, null), /* @__PURE__ */ import_react8.default.createElement(ItemInfo, null)));
+  const { currCategory } = (0, import_react11.useContext)(appContext);
+  return /* @__PURE__ */ import_react11.default.createElement("div", { className: "flex flex-col items-center p-1 gap-0.5 sm:gap-1 overflow-auto size-full" }, /* @__PURE__ */ import_react11.default.createElement(Categories, null), /* @__PURE__ */ import_react11.default.createElement("div", { className: "flex flew-row w-full gap-1 sm:gap-1.5 overflow-auto max-h-full h-full" }, /* @__PURE__ */ import_react11.default.createElement(
+    "div",
+    {
+      className: "flex flex-col gap-1 \n          w-[7rem] sm:w-[11rem] md:w-[13rem] lg:w-[16rem] xl:w-[19rem]\n          overflow-auto flex-shrink-0"
+    },
+    currCategory === "search" && /* @__PURE__ */ import_react11.default.createElement(SearchBox, null),
+    /* @__PURE__ */ import_react11.default.createElement(ItemList, null)
+  ), /* @__PURE__ */ import_react11.default.createElement(ItemInfo, null)));
 }
 
 // src/entry.jsx
 import_client.default.createRoot(document.getElementById("root")).render(
   // <React.StrictMode>
-  /* @__PURE__ */ import_react9.default.createElement(StockApp, null)
+  /* @__PURE__ */ import_react12.default.createElement(StockApp, null)
   //</React.StrictMode>
 );
 /*! Bundled license information:

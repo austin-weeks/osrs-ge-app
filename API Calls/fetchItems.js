@@ -1,6 +1,13 @@
 
 let baseData = null;
 
+export let LATEST_BULK_DATA_TIMESTAMP;
+
+export async function initializeData(callback) {
+  await getBase();
+  callback();
+}
+
 export default async function getBase() {
   if (baseData != null) return baseData.slice();
   try {
@@ -22,6 +29,7 @@ export default async function getBase() {
     for (let i = 0; i < maxFetches; i++) {
       const data = await fetch24HourPrices(lastTimestamp);
       dailyPrices.push(data.prices);
+      if (i === 0) LATEST_BULK_DATA_TIMESTAMP = data.timestamp;
       lastTimestamp = data.timestamp - timestampDayOffset;
     }
 
@@ -40,12 +48,13 @@ export default async function getBase() {
       let currentPriceData = null;
       let previousPriceData = null;
       let currentFoundAtIndex;
-      let lowQualityData = false;
+      let utilizedTimeSeriesSearch = false;
       //Finding Current Price
       for (let i = 0; i < dailyPrices.length; i++) {
         const match = dailyPrices[i].find(price => parseInt(price[0]) === item.id);
         if (match) {
-          if (Object.values(match).some(val => val == null)) continue;
+          //YOU NEED TO JUST ACCEPT THE DATA POINT IF EITHER A HIGH OR LOW IS NOT NULL
+          if (match[1].avgHighPrice == null && match[1].avgLowPrice == null) continue;
           currentFoundAtIndex = i;
           currentPriceData = match[1];
           break;
@@ -58,17 +67,17 @@ export default async function getBase() {
         for (let i = currentFoundAtIndex + 1; i < dailyPrices.length; i++) {
           const match = dailyPrices[i].find(price => parseInt(price[0]) === item.id);
           if (match) {
-            if (Object.values(match).some(val => val == null)) continue;
+            //YOU NEED TO JUST ACCEPT THE DATA POINT IF EITHER A HIGH OR LOW IS NOT NULL
+            if (match[1].avgHighPrice == null && match[1].avgLowPrice == null) continue;
             previousPriceData = match[1];
             break;
           }
         }
       }
       if (!currentPriceData || !previousPriceData) {
-        lowQualityData = true;
+        utilizedTimeSeriesSearch = true;
         const {current, previous} = await fetchItemCurrentAndPrevious(item.id);
         if (!current || !previous) {
-          console.error('could not find a current and previous for', item.name);
           continue;
         }
         currentPriceData = current;
@@ -76,8 +85,8 @@ export default async function getBase() {
       }
 
       //Defining price averages and changes
-      const currentPrice = (currentPriceData.avgHighPrice + currentPriceData.avgLowPrice) / 2;
-      const previousPrice = (previousPriceData.avgHighPrice + previousPriceData.avgLowPrice) / 2;
+      const currentPrice = getAveragePrice(currentPriceData);
+      const previousPrice = getAveragePrice(previousPriceData);
       const priceChange = ((currentPrice - previousPrice) / previousPrice) * 100;
 
       //Adding item info and prices to items array
@@ -91,9 +100,9 @@ export default async function getBase() {
         wikiLink: item.icon.replaceAll(' ', '_').slice(0, item.icon.length - 4),
         highAlch: item.highalch,
         buyLimit: item.limit,
-        lowQualityData,
-        latestPrice: Math.round(currentPrice),
-        yesterdayPrice: Math.round(previousPrice),
+        utilizedTimeSeriesSearch,
+        latestPrice: currentPrice,
+        yesterdayPrice: previousPrice,
         latestVolumeTraded: currentPriceData.highPriceVolume + currentPriceData.lowPriceVolume,
         previousVolumeTraded: previousPriceData.highPriceVolume + previousPriceData.lowPriceVolume
       });
@@ -107,9 +116,6 @@ export default async function getBase() {
     return { error: e }
   }
 }
-
-
-
 
 async function fetch24HourPrices(timestamp) {
   const resp = await fetch(`https://prices.runescape.wiki/api/v1/osrs/24h${timestamp ? `?timestamp=${timestamp}` : ''}`);
@@ -131,8 +137,8 @@ async function fetchItemCurrentAndPrevious(itemId) {
   let latestFoundAtIndex;
   //Grab the first valid entry
   for (let i = priceHistory.length - 1; i >= 0; i--) {
-    //None of the object entries contain null data.
-    if (Object.values(priceHistory[i]).every(val => val != null)) {
+    //YOU NEED TO JUST ACCEPT THE DATA POINT IF EITHER A HIGH OR LOW IS NOT NULL
+    if (priceHistory[i].avgHighPrice != null || priceHistory[i].avgLowPrice != null) {
       latestPriceData = priceHistory[i];
       latestFoundAtIndex = i;
       break;
@@ -140,7 +146,8 @@ async function fetchItemCurrentAndPrevious(itemId) {
   }
   //Grab the next valid entry
   for (let i = latestFoundAtIndex - 1; i >= 0; i--) {
-    if (Object.values(priceHistory[i]).every(val => val != null)) {
+    //YOU NEED TO JUST ACCEPT THE DATA POINT IF EITHER A HIGH OR LOW IS NOT NULL
+    if (priceHistory[i].avgHighPrice != null || priceHistory[i].avgLowPrice != null) {
       previousPriceData = priceHistory[i];
       break;
     }
@@ -150,4 +157,18 @@ async function fetchItemCurrentAndPrevious(itemId) {
     current: latestPriceData,
     previous: previousPriceData
   }
+}
+
+export function getAveragePrice(priceData) {
+  let average;
+  const {avgHighPrice, avgLowPrice, lowPriceVolume, highPriceVolume} = priceData;
+  if (avgHighPrice == null || avgLowPrice == null) {
+    average = avgHighPrice + avgLowPrice;
+  } else {
+    const highSales = highPriceVolume * avgHighPrice;
+    const lowSales = lowPriceVolume * avgLowPrice;
+    const totalVolume = lowPriceVolume + highPriceVolume;
+    average = (highSales + lowSales) / totalVolume;
+  }
+  return Math.round(average);
 }
