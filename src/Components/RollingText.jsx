@@ -75,7 +75,7 @@ export function RollingIconsVertical({ flipped = false, ...props }) {
     >
       <div className={`h-full whitespace-nowrap flex gap-4 pause-hover animate-scroll-text-vertical ${props.className}`}>
         {repeatedIcons.map((iconLink, ind) => (
-          <img key={ind} src={`https://oldschool.runescape.wiki/images/${iconLink}`} className={`aspect-square w-9 ${flipped && 'rotate-180'}`} />
+          <img key={ind} src={`https://oldschool.runescape.wiki/images/${iconLink}`} className={`aspect-square no-blurry w-9 ${flipped && 'rotate-180'}`} />
         ))}
       </div>
     </div>

@@ -23837,7 +23837,7 @@ function RollingIconsVertical({ flipped = false, ...props }) {
           ${flipped ? "rotate-180" : ""}
         `
     },
-    /* @__PURE__ */ import_react.default.createElement("div", { className: `h-full whitespace-nowrap flex gap-4 pause-hover animate-scroll-text-vertical ${props.className}` }, repeatedIcons.map((iconLink, ind) => /* @__PURE__ */ import_react.default.createElement("img", { key: ind, src: `https://oldschool.runescape.wiki/images/${iconLink}`, className: `aspect-square w-9 ${flipped && "rotate-180"}` })))
+    /* @__PURE__ */ import_react.default.createElement("div", { className: `h-full whitespace-nowrap flex gap-4 pause-hover animate-scroll-text-vertical ${props.className}` }, repeatedIcons.map((iconLink, ind) => /* @__PURE__ */ import_react.default.createElement("img", { key: ind, src: `https://oldschool.runescape.wiki/images/${iconLink}`, className: `aspect-square no-blurry w-9 ${flipped && "rotate-180"}` })))
   );
 }
 function RollingWatchList({ toRight = false, ...props }) {
