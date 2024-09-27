@@ -10,7 +10,7 @@ export default function ItemInfo() {
 
   if (selectedItem == null) return (
     <div className="size-full relative">
-        <img src="/gnome_child.png" className="size-full object-contain no-blurry opacity-30 border-l-2 border-border" />
+        <img src="gnome_child.png" className="size-full object-contain no-blurry opacity-30 border-l-2 border-border" />
         <span className="absolute top-[40%] right-[20%] text-4xl opacity-60">stonk</span>
     </div>
   );
