@@ -85,7 +85,7 @@ export default function StockApp() {
   if (currItems?.error) content = 'error!';
 
   return (
-    <div className="text-3xl max-h-screen h-screen w-screen overflow-auto flex flex-col items-center">
+    <div className="text-3xl max-h-svh h-screen w-screen overflow-auto flex flex-col items-center">
       <RollingLogo className="border-b-2 border-border" toRight />
       <div className="flex flex-row size-full overflow-auto">
         <RollingIconsVertical flipped />

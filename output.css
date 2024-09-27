@@ -802,6 +802,10 @@ video {
   max-height: 100vh;
 }
 
+.max-h-svh {
+  max-height: 100svh;
+}
+
 .w-11 {
   width: 2.75rem;
 }

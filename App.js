@@ -40826,7 +40826,7 @@ function StockApp() {
   if (!baseDataLoaded || !categoryPicked) content = /* @__PURE__ */ import_react11.default.createElement(IntroPage, { categoryPicked, setCategoryPicked });
   if (loading) content = /* @__PURE__ */ import_react11.default.createElement("div", { className: "size-full flex items-center justify-center" }, /* @__PURE__ */ import_react11.default.createElement(LoadingSpinner, null));
   if (currItems?.error) content = "error!";
-  return /* @__PURE__ */ import_react11.default.createElement("div", { className: "text-3xl max-h-screen h-screen w-screen overflow-auto flex flex-col items-center" }, /* @__PURE__ */ import_react11.default.createElement(RollingLogo, { className: "border-b-2 border-border", toRight: true }), /* @__PURE__ */ import_react11.default.createElement("div", { className: "flex flex-row size-full overflow-auto" }, /* @__PURE__ */ import_react11.default.createElement(RollingIconsVertical, { flipped: true }), /* @__PURE__ */ import_react11.default.createElement(appContext.Provider, { value: {
+  return /* @__PURE__ */ import_react11.default.createElement("div", { className: "text-3xl max-h-svh h-screen w-screen overflow-auto flex flex-col items-center" }, /* @__PURE__ */ import_react11.default.createElement(RollingLogo, { className: "border-b-2 border-border", toRight: true }), /* @__PURE__ */ import_react11.default.createElement("div", { className: "flex flex-row size-full overflow-auto" }, /* @__PURE__ */ import_react11.default.createElement(RollingIconsVertical, { flipped: true }), /* @__PURE__ */ import_react11.default.createElement(appContext.Provider, { value: {
     currItems,
     currCategory,
     selectedItem,
