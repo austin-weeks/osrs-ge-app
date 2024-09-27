@@ -17,9 +17,9 @@ export default function RollingText({ text, toRight=false, ...props }) {
   );
 }
 
-const osrsLogoLarge = 'https://oldschool.runescape.wiki/images/Steam_client_logo.png?a7cae&20210407035501';
+// const osrsLogoLarge = 'https://oldschool.runescape.wiki/images/Steam_client_logo.png?a7cae&20210407035501';
 const osrsLogoSmall = 'https://oldschool.runescape.wiki/images/RuneScape_2_logo.png?47c97&20240819234416';
-const osrsLogoExtraSmall = 'https://oldschool.runescape.wiki/images/Old_School_RuneScape_client_icon_%28alternative%29.png?9fcc3&20191128181110';
+// const osrsLogoExtraSmall = 'https://oldschool.runescape.wiki/images/Old_School_RuneScape_client_icon_%28alternative%29.png?9fcc3&20191128181110';
 
 export function RollingLogo({ toRight = false, ...props }) {
   function LogoAndText() {
@@ -101,7 +101,7 @@ export function RollingTextVertical({text, flipped=false, ...props }) {
   );
 }
 
-export function RollingWatchList({toRight = false, ...props }) {
+export function RollingWatchList({toRight = false, baseDataLoaded, ...props }) {
   const [items, setItems] = useState(null);
   const [subscribed, setSubscribed] = useState(false);
   const [forcedUpdate, setForcedUpdate] = useState(0);
@@ -116,8 +116,9 @@ export function RollingWatchList({toRight = false, ...props }) {
   }, []);
 
   useEffect(() => {
+    if (!baseDataLoaded) return;
     getMyList(setItems);
-  }, [forcedUpdate]);
+  }, [forcedUpdate, baseDataLoaded]);
 
   if (!items || items.length === 0) return (
     <div className="w-full flex-shrink-0 h-[44px] md:h-[52px] border-t-2 border-border" />

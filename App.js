@@ -23542,14 +23542,14 @@ async function initializeData(callback) {
 async function getBase() {
   if (baseData != null) return baseData.slice();
   try {
+    const start2 = Date.now();
     const respItems = await fetch("https://prices.runescape.wiki/api/v1/osrs/mapping");
     const itemDetails = await respItems.json();
-    itemDetails.sort((a2, b) => a2.id - b.id);
     const respLastRecordedPrices = await fetch("https://prices.runescape.wiki/api/v1/osrs/latest");
     const jsonLastRecordedPrices = await respLastRecordedPrices.json();
     const recordedPrices = Object.entries(jsonLastRecordedPrices.data);
     const timestampDayOffset = 86400;
-    const maxFetches = 7;
+    const maxFetches = 5;
     let dailyPrices = [];
     let lastTimestamp = null;
     for (let i = 0; i < maxFetches; i++) {
@@ -23558,18 +23558,21 @@ async function getBase() {
       if (i === 0) LATEST_BULK_DATA_TIMESTAMP = data.timestamp;
       lastTimestamp = data.timestamp - timestampDayOffset;
     }
-    let items = [];
+    let fetchPromises = [];
+    let itemsCurPrevPrice = [];
     for (const item of itemDetails) {
-      const entryInRecordedPrices = recordedPrices.find((price) => parseInt(price[0]) === item.id);
-      if (!entryInRecordedPrices) {
-        continue;
-      }
+      const itemData = {
+        item,
+        current: null,
+        previous: null,
+        utilizedTimeSeriesSearch: false
+      };
+      if (!binSearchID(recordedPrices, item.id)) continue;
       let currentPriceData = null;
       let previousPriceData = null;
       let currentFoundAtIndex;
-      let utilizedTimeSeriesSearch = false;
       for (let i = 0; i < dailyPrices.length; i++) {
-        const match = dailyPrices[i].find((price) => parseInt(price[0]) === item.id);
+        const match = binSearchID(dailyPrices[i], item.id);
         if (match) {
           if (match[1].avgHighPrice == null && match[1].avgLowPrice == null) continue;
           currentFoundAtIndex = i;
@@ -23579,7 +23582,7 @@ async function getBase() {
       }
       if (currentPriceData != null) {
         for (let i = currentFoundAtIndex + 1; i < dailyPrices.length; i++) {
-          const match = dailyPrices[i].find((price) => parseInt(price[0]) === item.id);
+          const match = binSearchID(dailyPrices[i], item.id);
           if (match) {
             if (match[1].avgHighPrice == null && match[1].avgLowPrice == null) continue;
             previousPriceData = match[1];
@@ -23588,35 +23591,44 @@ async function getBase() {
         }
       }
       if (!currentPriceData || !previousPriceData) {
-        utilizedTimeSeriesSearch = true;
-        const { current, previous } = await fetchItemCurrentAndPrevious(item.id);
-        if (!current || !previous) {
-          continue;
-        }
-        currentPriceData = current;
-        previousPriceData = previous;
+        fetchPromises.push(fetchItemCurrentAndPrevious(item.id).then(({ current, previous }) => {
+          if (!current || !previous) return;
+          itemData.utilizedTimeSeriesSearch = true;
+          itemData.current = current;
+          itemData.previous = previous;
+          itemsCurPrevPrice.push(itemData);
+        }));
+      } else {
+        itemData.current = currentPriceData;
+        itemData.previous = previousPriceData;
+        itemsCurPrevPrice.push(itemData);
       }
-      const currentPrice = getAveragePrice(currentPriceData);
-      const previousPrice = getAveragePrice(previousPriceData);
+    }
+    await Promise.all(fetchPromises);
+    let items = [];
+    for (const itemData of itemsCurPrevPrice) {
+      const currentPrice = getAveragePrice(itemData.current);
+      const previousPrice = getAveragePrice(itemData.previous);
       const priceChange = (currentPrice - previousPrice) / previousPrice * 100;
       items.push({
         priceChange,
-        id: item.id,
-        name: item.name,
-        examine: item.examine,
-        members: item.members,
-        icon: item.icon.replaceAll(" ", "_"),
-        wikiLink: item.icon.replaceAll(" ", "_").slice(0, item.icon.length - 4),
-        highAlch: item.highalch,
-        buyLimit: item.limit,
-        utilizedTimeSeriesSearch,
+        id: itemData.item.id,
+        name: itemData.item.name,
+        examine: itemData.item.examine,
+        members: itemData.item.members,
+        icon: itemData.item.icon.replaceAll(" ", "_"),
+        wikiLink: itemData.item.icon.replaceAll(" ", "_").slice(0, itemData.item.icon.length - 4),
+        highAlch: itemData.item.highalch,
+        buyLimit: itemData.item.limit,
+        utilizedTimeSeriesSearch: itemData.utilizedTimeSeriesSearch,
         latestPrice: currentPrice,
         yesterdayPrice: previousPrice,
-        latestVolumeTraded: currentPriceData.highPriceVolume + currentPriceData.lowPriceVolume,
-        previousVolumeTraded: previousPriceData.highPriceVolume + previousPriceData.lowPriceVolume
+        latestVolumeTraded: itemData.current.highPriceVolume + itemData.current.lowPriceVolume,
+        previousVolumeTraded: itemData.previous.highPriceVolume + itemData.previous.lowPriceVolume
       });
     }
     baseData = items;
+    console.log("Time to fetch item data: ", ((Date.now() - start2) / 1e3).toFixed(2), "seconds");
     return baseData.slice();
   } catch (e) {
     console.error(e);
@@ -23670,6 +23682,18 @@ function getAveragePrice(priceData) {
     average = (highSales + lowSales) / totalVolume;
   }
   return Math.round(average);
+}
+function binSearchID(array2, target) {
+  let l = 0;
+  let r = array2.length - 1;
+  while (l <= r) {
+    let m = Math.floor(l / 2 + r / 2);
+    const id2 = parseInt(array2[m][0]);
+    if (id2 === target) return array2[m];
+    else if (id2 < target) l = m + 1;
+    else r = m - 1;
+  }
+  return false;
 }
 
 // API Calls/myList.js
@@ -23840,7 +23864,7 @@ function RollingIconsVertical({ flipped = false, ...props }) {
     /* @__PURE__ */ import_react.default.createElement("div", { className: `h-full whitespace-nowrap flex gap-4 pause-hover animate-scroll-text-vertical ${props.className}` }, repeatedIcons.map((iconLink, ind) => /* @__PURE__ */ import_react.default.createElement("img", { key: ind, src: `https://oldschool.runescape.wiki/images/${iconLink}`, className: `aspect-square no-blurry w-9 ${flipped && "rotate-180"}` })))
   );
 }
-function RollingWatchList({ toRight = false, ...props }) {
+function RollingWatchList({ toRight = false, baseDataLoaded, ...props }) {
   const [items, setItems] = (0, import_react.useState)(null);
   const [subscribed, setSubscribed] = (0, import_react.useState)(false);
   const [forcedUpdate, setForcedUpdate] = (0, import_react.useState)(0);
@@ -23854,8 +23878,9 @@ function RollingWatchList({ toRight = false, ...props }) {
     }
   }, []);
   (0, import_react.useEffect)(() => {
+    if (!baseDataLoaded) return;
     getMyList(setItems);
-  }, [forcedUpdate]);
+  }, [forcedUpdate, baseDataLoaded]);
   if (!items || items.length === 0) return /* @__PURE__ */ import_react.default.createElement("div", { className: "w-full flex-shrink-0 h-[44px] md:h-[52px] border-t-2 border-border" });
   let repeatedItems = [];
   for (let i = 0; i < 30; i++) {
@@ -40487,7 +40512,7 @@ function ToolTip({ offset: offset2 = null, ...props }) {
 // src/Components/ItemInfo.jsx
 function ItemInfo() {
   const { selectedItem } = (0, import_react7.useContext)(appContext);
-  if (selectedItem == null) return /* @__PURE__ */ import_react7.default.createElement("div", { className: "size-full relative" }, /* @__PURE__ */ import_react7.default.createElement("img", { src: "/assets/gnome_child.png", className: "size-full object-contain no-blurry opacity-30 border-l-2 border-border" }), /* @__PURE__ */ import_react7.default.createElement("span", { className: "absolute top-[40%] right-[20%] text-4xl opacity-60" }, "stonk"));
+  if (selectedItem == null) return /* @__PURE__ */ import_react7.default.createElement("div", { className: "size-full relative" }, /* @__PURE__ */ import_react7.default.createElement("img", { src: "/gnome_child.png", className: "size-full object-contain no-blurry opacity-30 border-l-2 border-border" }), /* @__PURE__ */ import_react7.default.createElement("span", { className: "absolute top-[40%] right-[20%] text-4xl opacity-60" }, "stonk"));
   const formattedPrice = formatGP(selectedItem.latestPrice);
   return /* @__PURE__ */ import_react7.default.createElement("div", { className: "text-rs-shadow-small sm:text-rs-shadow max-h-full flex flex-col flex-grow items-center overflow-auto" }, /* @__PURE__ */ import_react7.default.createElement("div", { className: "flex flex-row w-full px-1 sm:px-4 sm:py-1 justify-between items-center" }, /* @__PURE__ */ import_react7.default.createElement("div", { className: "flex flex-row gap-1.5 sm:gap-3 justify-center items-center" }, /* @__PURE__ */ import_react7.default.createElement("div", { className: "flex-shrink-0 size-7 sm:size-9 md:size-10 lg:size-11" }, /* @__PURE__ */ import_react7.default.createElement("img", { src: `https://oldschool.runescape.wiki/images/${selectedItem.icon}`, alt: "", className: "no-blurry object-contain size-full" })), /* @__PURE__ */ import_react7.default.createElement("span", { className: "text-xl sm:text-3xl md:text-4xl lg:text-[2.75rem]" }, selectedItem.name)), /* @__PURE__ */ import_react7.default.createElement("div", { className: "flex flex-row gap-1 sm:gap-3 justify-center items-center h-12" }, /* @__PURE__ */ import_react7.default.createElement(AddRemoveButton, null), /* @__PURE__ */ import_react7.default.createElement("a", { href: `https://oldschool.runescape.wiki/w/${selectedItem.wikiLink}`, target: "_blank", className: "cursor-alias w-8 sm:w-12 h-full" }, /* @__PURE__ */ import_react7.default.createElement("img", { src: "https://oldschool.runescape.wiki/images/Wiki@2x.png", alt: "osrs wiki", className: "object-contain h-full" })))), /* @__PURE__ */ import_react7.default.createElement("div", { className: "px-1.5 sm:px-4 pb-1 w-full self-start text-sm sm:text-lg md:text-xl border-border border-b-2" }, selectedItem.examine), /* @__PURE__ */ import_react7.default.createElement("div", { className: "flex flex-row py-1 sm:py-1.5 flex-wrap w-full justify-center items-center gap-2 md:gap-4" }, /* @__PURE__ */ import_react7.default.createElement("div", { className: "relative group" }, /* @__PURE__ */ import_react7.default.createElement(
     "img",
@@ -40810,7 +40835,7 @@ function StockApp() {
     setSelectedItem,
     loadSearchResults,
     queryState
-  } }, content), /* @__PURE__ */ import_react11.default.createElement(RollingIconsVertical, null)), /* @__PURE__ */ import_react11.default.createElement(RollingWatchList, { className: "border-t-2 border-border" }));
+  } }, content), /* @__PURE__ */ import_react11.default.createElement(RollingIconsVertical, null)), /* @__PURE__ */ import_react11.default.createElement(RollingWatchList, { baseDataLoaded, className: "border-t-2 border-border" }));
 }
 function MainSection() {
   const { currCategory } = (0, import_react11.useContext)(appContext);

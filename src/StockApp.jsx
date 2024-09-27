@@ -106,7 +106,7 @@ export default function StockApp() {
 
         <RollingIconsVertical />
       </div>
-      <RollingWatchList className="border-t-2 border-border" />
+      <RollingWatchList baseDataLoaded={baseDataLoaded} className="border-t-2 border-border" />
     </div>
   );
 }
