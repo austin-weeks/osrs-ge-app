@@ -13,4 +13,4 @@ The app pulls data from the [OSRS Wiki Real-time Prices API](https://oldschool.r
 
 The API's `/mapping` and `/latest` endpoints list information for each game item. However, these lists don't always include all the required data points, so it's sometimes necessary to make a call to `/timeseries?id={itemID}` for each of the items with missing data. This means the app needs to make 100-200 total API calls on startup, which resulted in load times of 5-15 seconds with my initial implementation.
 
-Small optimzations helped improved this, such as using a binary search to match item ID's rather than the built in `Array.find()` method. However, the main optimzation came from using `Promise.all()` to simultaneously fetch the missing data. After implementing these improvements, the app now loads in less than a second!
+Small optimizations helped improved this, such as using a binary search to match item ID's rather than the built in `Array.find()` method. However, the main optimization came from using `Promise.all()` to simultaneously fetch the missing data. After implementing these improvements, the app now loads in less than a second!
