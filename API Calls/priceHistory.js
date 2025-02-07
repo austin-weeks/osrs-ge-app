@@ -1,9 +1,14 @@
-import { getAveragePrice, LATEST_BULK_DATA_TIMESTAMP } from "./fetchItems";
+import { getAveragePrice, LATEST_BULK_DATA_TIMESTAMP, X_USER_AGENT } from "./fetchItems";
 
 //Used by the graph to get price history for an item
 export default async function loadPriceHistory(itemId, utilizedTimeSeriesSearch, setPriceHistory) {
   try {
-    const resp = await fetch(`https://prices.runescape.wiki/api/v1/osrs/timeseries?timestep=24h&id=${itemId}`);
+    const resp = await fetch(`https://prices.runescape.wiki/api/v1/osrs/timeseries?timestep=24h&id=${itemId}`, {
+      method: 'GET',
+      headers: {
+        'X-User-Agent': X_USER_AGENT
+      }
+    });
     const data = await resp.json();
     let previousEntry = null;
     const history = data.data.map(entry => {

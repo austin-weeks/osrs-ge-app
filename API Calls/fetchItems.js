@@ -1,7 +1,7 @@
+export const X_USER_AGENT = 'OSRS-Grand-Exchange-Tracker/1.0.1 (Web; Contact: https://austin-weeks.github.io/osrs-ge-app)';
+export let LATEST_BULK_DATA_TIMESTAMP;
 
 let baseData = null;
-
-export let LATEST_BULK_DATA_TIMESTAMP;
 
 export async function initializeData(callback) {
   await getBase();
@@ -15,11 +15,21 @@ export default async function getBase() {
     const start = Date.now();
 
     //Grabbing list of all items & their info
-    const respItems = await fetch('https://prices.runescape.wiki/api/v1/osrs/mapping');
+    const respItems = await fetch('https://prices.runescape.wiki/api/v1/osrs/mapping', {
+      method: 'GET',
+      headers: {
+        'X-User-Agent': X_USER_AGENT
+      }
+    });
     const itemDetails = await respItems.json();
 
     //Grabbing latest price of all items.
-    const respLastRecordedPrices = await fetch('https://prices.runescape.wiki/api/v1/osrs/latest');
+    const respLastRecordedPrices = await fetch('https://prices.runescape.wiki/api/v1/osrs/latest', {
+      method: 'GET',
+      headers: {
+        'X-User-Agent': X_USER_AGENT
+      }
+    });
     const jsonLastRecordedPrices = await respLastRecordedPrices.json();
     //Recorded prices is sorted inc by ID, can binary search
     const recordedPrices = Object.entries(jsonLastRecordedPrices.data);
@@ -36,7 +46,6 @@ export default async function getBase() {
       if (i === 0) LATEST_BULK_DATA_TIMESTAMP = data.timestamp;
       lastTimestamp = data.timestamp - timestampDayOffset;
     }
-
 
     //Creating a list of items that includes only those that have ever had a price recorded
     //This removes any items in which there is not trade data.
@@ -141,7 +150,12 @@ export default async function getBase() {
 
 
 async function fetch24HourPrices(timestamp) {
-  const resp = await fetch(`https://prices.runescape.wiki/api/v1/osrs/24h${timestamp ? `?timestamp=${timestamp}` : ''}`);
+  const resp = await fetch(`https://prices.runescape.wiki/api/v1/osrs/24h${timestamp ? `?timestamp=${timestamp}` : ''}`, {
+    method: 'GET',
+    headers: {
+      'X-User-Agent': X_USER_AGENT
+    }
+  });
   const data = await resp.json();
   const prices = Object.entries(data.data);
   prices.sort((a, b) => a[0] - b[0]);
@@ -152,7 +166,12 @@ async function fetch24HourPrices(timestamp) {
 }
 
 async function fetchItemCurrentAndPrevious(itemId) {
-  const resp = await fetch(`https://prices.runescape.wiki/api/v1/osrs/timeseries?timestep=24h&id=${itemId}`);
+  const resp = await fetch(`https://prices.runescape.wiki/api/v1/osrs/timeseries?timestep=24h&id=${itemId}`, {
+    method: 'GET',
+    headers: {
+      'X-User-Agent': X_USER_AGENT
+    }
+  });
   const data = await resp.json();
   const priceHistory = data.data;
   let latestPriceData;
