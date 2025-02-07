@@ -23533,8 +23533,9 @@ var import_react11 = __toESM(require_react());
 var import_react = __toESM(require_react());
 
 // API Calls/fetchItems.js
-var baseData = null;
+var X_USER_AGENT = "OSRS-Grand-Exchange-Tracker/1.0.1 (Web; Contact: https://austin-weeks.github.io/osrs-ge-app)";
 var LATEST_BULK_DATA_TIMESTAMP;
+var baseData = null;
 async function initializeData(callback) {
   await getBase();
   callback();
@@ -23543,9 +23544,19 @@ async function getBase() {
   if (baseData != null) return baseData.slice();
   try {
     const start2 = Date.now();
-    const respItems = await fetch("https://prices.runescape.wiki/api/v1/osrs/mapping");
+    const respItems = await fetch("https://prices.runescape.wiki/api/v1/osrs/mapping", {
+      method: "GET",
+      headers: {
+        "X-User-Agent": X_USER_AGENT
+      }
+    });
     const itemDetails = await respItems.json();
-    const respLastRecordedPrices = await fetch("https://prices.runescape.wiki/api/v1/osrs/latest");
+    const respLastRecordedPrices = await fetch("https://prices.runescape.wiki/api/v1/osrs/latest", {
+      method: "GET",
+      headers: {
+        "X-User-Agent": X_USER_AGENT
+      }
+    });
     const jsonLastRecordedPrices = await respLastRecordedPrices.json();
     const recordedPrices = Object.entries(jsonLastRecordedPrices.data);
     const timestampDayOffset = 86400;
@@ -23636,7 +23647,12 @@ async function getBase() {
   }
 }
 async function fetch24HourPrices(timestamp) {
-  const resp = await fetch(`https://prices.runescape.wiki/api/v1/osrs/24h${timestamp ? `?timestamp=${timestamp}` : ""}`);
+  const resp = await fetch(`https://prices.runescape.wiki/api/v1/osrs/24h${timestamp ? `?timestamp=${timestamp}` : ""}`, {
+    method: "GET",
+    headers: {
+      "X-User-Agent": X_USER_AGENT
+    }
+  });
   const data = await resp.json();
   const prices = Object.entries(data.data);
   prices.sort((a2, b) => a2[0] - b[0]);
@@ -23646,7 +23662,12 @@ async function fetch24HourPrices(timestamp) {
   };
 }
 async function fetchItemCurrentAndPrevious(itemId) {
-  const resp = await fetch(`https://prices.runescape.wiki/api/v1/osrs/timeseries?timestep=24h&id=${itemId}`);
+  const resp = await fetch(`https://prices.runescape.wiki/api/v1/osrs/timeseries?timestep=24h&id=${itemId}`, {
+    method: "GET",
+    headers: {
+      "X-User-Agent": X_USER_AGENT
+    }
+  });
   const data = await resp.json();
   const priceHistory = data.data;
   let latestPriceData;
@@ -40406,7 +40427,12 @@ function getMax(array2, key) {
 // API Calls/priceHistory.js
 async function loadPriceHistory(itemId, utilizedTimeSeriesSearch, setPriceHistory) {
   try {
-    const resp = await fetch(`https://prices.runescape.wiki/api/v1/osrs/timeseries?timestep=24h&id=${itemId}`);
+    const resp = await fetch(`https://prices.runescape.wiki/api/v1/osrs/timeseries?timestep=24h&id=${itemId}`, {
+      method: "GET",
+      headers: {
+        "X-User-Agent": X_USER_AGENT
+      }
+    });
     const data = await resp.json();
     let previousEntry = null;
     const history = data.data.map((entry) => {
